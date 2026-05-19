@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin – Le Morne Brabant</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a1a; }
+
+/* LOGIN */
+#loginScreen { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.login-card { background: white; border-radius: 16px; padding: 48px 40px; width: 380px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); text-align: center; }
+.login-card img { height: 56px; margin-bottom: 24px; }
+.login-card h1 { font-size: 1.1rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+.login-card p { color: #888; font-size: 0.82rem; margin-bottom: 28px; }
+.login-card input { width: 100%; padding: 12px 16px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 0.95rem; margin-bottom: 12px; transition: border 0.2s; }
+.login-card input:focus { outline: none; border-color: #1a1a1a; }
+.login-card button { width: 100%; padding: 13px; background: #1a1a1a; color: white; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: background 0.2s; }
+.login-card button:hover { background: #333; }
+.login-error { color: #e53e3e; font-size: 0.82rem; margin-top: 8px; display: none; }
+
+/* ADMIN PANEL */
+#adminPanel { display: none; }
+header { background: white; border-bottom: 3px solid #1a1a1a; padding: 14px 28px; display: flex; align-items: center; gap: 16px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+header img { height: 48px; }
+.header-divider { width: 2px; height: 40px; background: #e0e0e0; }
+.header-text h1 { font-size: 1rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+.header-text p { font-size: 0.75rem; color: #888; }
+.header-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.btn-save { background: #1a1a1a; color: white; border: none; padding: 10px 24px; border-radius: 8px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
+.btn-save:hover { background: #333; }
+.btn-save:disabled { background: #999; cursor: not-allowed; }
+.btn-logout { background: none; border: 1.5px solid #ddd; color: #666; padding: 8px 16px; border-radius: 8px; font-size: 0.82rem; cursor: pointer; }
+.btn-logout:hover { border-color: #999; }
+.save-status { font-size: 0.82rem; font-weight: 600; }
+.save-status.ok { color: #38a169; }
+.save-status.err { color: #e53e3e; }
+
+.container { max-width: 1100px; margin: 28px auto; padding: 0 20px; }
+
+/* TABS */
+.tabs { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.tab-btn { padding: 7px 16px; border-radius: 20px; border: 1.5px solid #ddd; background: white; font-size: 0.8rem; font-weight: 600; cursor: pointer; color: #555; transition: all 0.2s; }
+.tab-btn:hover { border-color: #1a1a1a; color: #1a1a1a; }
+.tab-btn.active { background: #1a1a1a; color: white; border-color: #1a1a1a; }
+
+/* SECTIONS */
+.section { display: none; }
+.section.active { display: block; }
+.section-card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.section-card h2 { font-size: 0.78rem; font-weight: 800; color: #888; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 18px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px; }
+.fields-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-group label { font-size: 0.78rem; font-weight: 600; color: #555; }
+.field-group input { padding: 8px 12px; border: 1.5px solid #e0e0e0; border-radius: 7px; font-size: 0.9rem; color: #1a1a1a; background: #fafafa; transition: border 0.2s; }
+.field-group input:focus { outline: none; border-color: #1a1a1a; background: white; }
+.field-group .suffix { font-size: 0.72rem; color: #aaa; margin-top: 2px; }
+
+/* TOKEN SETTINGS */
+.token-section { background: #fffbeb; border: 1.5px solid #f6e05e; border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; }
+.token-section h3 { font-size: 0.82rem; font-weight: 700; color: #744210; margin-bottom: 8px; }
+.token-row { display: flex; gap: 10px; align-items: center; }
+.token-row input { flex: 1; padding: 8px 12px; border: 1.5px solid #f6e05e; border-radius: 7px; font-size: 0.85rem; font-family: monospace; }
+.token-row button { padding: 8px 16px; background: #744210; color: white; border: none; border-radius: 7px; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+
+@media(max-width:600px) { .fields-grid { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <img id="loginLogo" src="" alt="Le Morne">
+    <h1>Le Morne Brabant</h1>
+    <p>Panel de administración de precios</p>
+    <input type="password" id="pwInput" placeholder="Contraseña" onkeydown="if(event.key==='Enter')doLogin()">
+    <button onclick="doLogin()">Entrar</button>
+    <div class="login-error" id="loginError">Contraseña incorrecta</div>
+  </div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPanel">
+  <header>
+    <img id="adminLogo" src="" alt="LM">
+    <div class="header-divider"></div>
+    <div class="header-text">
+      <h1>Le Morne Brabant</h1>
+      <p>Panel de Administración · Tarifas</p>
+    </div>
+    <div class="header-actions">
+      <span class="save-status" id="saveStatus"></span>
+      <button class="btn-save" id="btnSave" onclick="saveConfig()">Guardar cambios</button>
+      <button class="btn-logout" onclick="logout()">Salir</button>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- TOKEN -->
+    <div class="token-section">
+      <h3>⚙ Token de GitHub (necesario para guardar)</h3>
+      <div class="token-row">
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        <button onclick="saveToken()">Guardar token</button>
+      </div>
+    </div>
+
+    <!-- TABS -->
+    <div class="tabs" id="tabs"></div>
+
+    <!-- SECTIONS CONTAINER -->
+    <div id="sectionsContainer"></div>
+
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const REPO_OWNER = 'DiegoLemorne';
+const REPO_NAME  = 'calculadora-honorarios';
+const CONFIG_PATH = 'config.json';
+const PW_HASH = 'fdea18c285b3728c5ba2c0d8002a0cec1464724651548085cbd7ef1190b123b5'; // LeMorne2026
+
+// Logos embebidos (se cargarán del mismo repo)
+const ISOTIPO_URL = './isotipo.png';
+
+// ─── SCHEMA DE SECCIONES Y CAMPOS ────────────────────────────────────────────
+const SCHEMA = [
+  { id: 'familia', label: 'Familia', groups: [
+    { title: 'Mutuo Acuerdo', fields: [
+      { key: 'mutuo_base',         label: 'Precio base',            unit: '€' },
+      { key: 'mutuo_dos_conyuges', label: 'Dos cónyuges',           unit: '€' },
+      { key: 'mutuo_bienes',       label: 'Con bienes',             unit: '€' },
+      { key: 'mutuo_hijos',        label: 'Con hijos menores',      unit: '€' },
+      { key: 'mutuo_pension',      label: 'Con pensión compensatoria', unit: '€' },
+    ]},
+    { title: 'Contencioso', fields: [
+      { key: 'contencioso_base',    label: 'Precio base',            unit: '€' },
+      { key: 'contencioso_bienes',  label: 'Con bienes (USO)',        unit: '€' },
+      { key: 'contencioso_hijos',   label: 'Con hijos',              unit: '€' },
+      { key: 'contencioso_pension', label: 'Con pensión compensatoria', unit: '€' },
+      { key: 'medidas_provisionales', label: 'Medidas Provisionales', unit: '€' },
+    ]},
+    { title: 'Otros procedimientos', fields: [
+      { key: 'reconvencion_hijos',    label: 'Reconvención con hijos',    unit: '€' },
+      { key: 'reconvencion_sin_hijos',label: 'Reconvención sin hijos',    unit: '€' },
+      { key: 'nulidad',               label: 'Nulidad matrimonial',       unit: '€' },
+      { key: 'incapacitacion',        label: 'Incapacitación',            unit: '€' },
+    ]},
+    { title: 'Liquidación de Gananciales', fields: [
+      { key: 'gananciales_mutuo_base', label: 'Mutuo – Precio base', unit: '€' },
+      { key: 'gananciales_mutuo_pct',  label: 'Mutuo – Porcentaje',  unit: '%' },
+      { key: 'gananciales_cont_base',  label: 'Contencioso – Precio base', unit: '€' },
+      { key: 'gananciales_cont_pct',   label: 'Contencioso – Porcentaje',  unit: '%' },
+    ]},
+    { title: 'Mediación Civil', fields: [
+      { key: 'mediacion_presentacion', label: 'Presentación y asistencia', unit: '€' },
+      { key: 'mediacion_asistencia',   label: 'Asistencia a mediación',    unit: '€' },
+      { key: 'mediacion_apertura',     label: 'Apertura expediente',       unit: '€' },
+      { key: 'mediacion_sesion',       label: 'Por sesión adicional',      unit: '€' },
+    ]},
+  ]},
+
+  { id: 'civil', label: 'Civil / Concurso', groups: [
+    { title: 'Porcentajes por cuantía', fields: [
+      { key: 'pct_tramo1', label: 'Hasta 17.999 €',    unit: '%' },
+      { key: 'pct_tramo2', label: '18.000 – 50.000 €', unit: '%' },
+      { key: 'pct_tramo3', label: 'Más de 50.000 €',   unit: '%' },
+      { key: 'minimo',     label: 'Honorario mínimo',  unit: '€' },
+    ]},
+    { title: 'Precios fijos', fields: [
+      { key: 'reconvencion_base', label: 'Reconvención',             unit: '€' },
+      { key: 'apelacion',         label: 'Recurso de Apelación',     unit: '€' },
+      { key: 'casacion',          label: 'Recurso de Casación',      unit: '€' },
+      { key: 'extrajudicial',     label: 'Procedimiento Extrajudicial', unit: '€' },
+      { key: 'clausula_rebus',    label: 'Cláusula Rebus',           unit: '€' },
+    ]},
+  ]},
+
+  { id: 'herencia_contenciosa', label: 'Herencia Contenciosa', groups: [
+    { title: 'Mínimo', fields: [{ key: 'minimo', label: 'Honorario mínimo', unit: '€' }] },
+    { title: 'Impugnación de Testamento – Tramos', fields: [
+      { key: 'impugnacion_t1_fijo', label: 'Hasta 10.000 € (fijo)',        unit: '€' },
+      { key: 'impugnacion_t2_pct',  label: '10.001–100.000 € (%)',         unit: '%' },
+      { key: 'impugnacion_t2_base', label: '10.001–100.000 € (base)',      unit: '€' },
+      { key: 'impugnacion_t3_pct',  label: '100.001–500.000 € (%)',        unit: '%' },
+      { key: 'impugnacion_t3_base', label: '100.001–500.000 € (base)',     unit: '€' },
+      { key: 'impugnacion_t4_pct',  label: '500.001–1.000.000 € (%)',      unit: '%' },
+      { key: 'impugnacion_t4_base', label: '500.001–1.000.000 € (base)',   unit: '€' },
+      { key: 'impugnacion_t5_pct',  label: '1.000.001–2.000.000 € (%)',    unit: '%' },
+      { key: 'impugnacion_t5_base', label: '1.000.001–2.000.000 € (base)', unit: '€' },
+      { key: 'impugnacion_t6_pct',  label: 'Más de 2.000.000 € (%)',       unit: '%' },
+      { key: 'impugnacion_t6_base', label: 'Más de 2.000.000 € (base)',    unit: '€' },
+    ]},
+    { title: 'División Judicial de Herencia – Tramos', fields: [
+      { key: 'division_t1_fijo', label: 'Hasta 10.000 € (fijo)',        unit: '€' },
+      { key: 'division_t2_pct',  label: '10.001–100.000 € (%)',         unit: '%' },
+      { key: 'division_t2_base', label: '10.001–100.000 € (base)',      unit: '€' },
+      { key: 'division_t3_pct',  label: '100.001–500.000 € (%)',        unit: '%' },
+      { key: 'division_t3_base', label: '100.001–500.000 € (base)',     unit: '€' },
+      { key: 'division_t4_pct',  label: '500.001–1.000.000 € (%)',      unit: '%' },
+      { key: 'division_t4_base', label: '500.001–1.000.000 € (base)',   unit: '€' },
+      { key: 'division_t5_pct',  label: '1.000.001–2.000.000 € (%)',    unit: '%' },
+      { key: 'division_t5_base', label: '1.000.001–2.000.000 € (base)', unit: '€' },
+      { key: 'division_t6_pct',  label: 'Más de 2.000.000 € (%)',       unit: '%' },
+      { key: 'division_t6_base', label: 'Más de 2.000.000 € (base)',    unit: '€' },
+    ]},
+  ]},
+
+  { id: 'herencia_mutuo', label: 'Herencia Mutuo Acuerdo', groups: [
+    { title: 'Servicios fijos', fields: [
+      { key: 'renuncia_estudio',   label: 'Renuncia (Estudio)',      unit: '€' },
+      { key: 'renuncia_tramite',   label: 'Renuncia (Trámite)',      unit: '€' },
+      { key: 'testamento_simple',  label: 'Testamento Simple',       unit: '€' },
+      { key: 'testamento_complejo',label: 'Testamento Complejo',     unit: '€' },
+    ]},
+    { title: 'Con Testamento – Tramos', fields: [
+      { key: 'ct_t1_fijo', label: 'Hasta 20.000 € (fijo)', unit: '€' },
+      { key: 'ct_t2_pct',  label: '20.001–100.000 € (%)',  unit: '%' }, { key: 'ct_t2_base', label: '20.001–100.000 € (base)', unit: '€' },
+      { key: 'ct_t3_pct',  label: '100.001–500.000 € (%)', unit: '%' }, { key: 'ct_t3_base', label: '100.001–500.000 € (base)', unit: '€' },
+      { key: 'ct_t4_pct',  label: '500.001–1M € (%)',      unit: '%' }, { key: 'ct_t4_base', label: '500.001–1M € (base)',      unit: '€' },
+      { key: 'ct_t5_pct',  label: '1M–2M € (%)',           unit: '%' }, { key: 'ct_t5_base', label: '1M–2M € (base)',           unit: '€' },
+      { key: 'ct_t6_pct',  label: 'Más de 2M € (%)',       unit: '%' },
+    ]},
+    { title: 'Sin Testamento – Notarial', fields: [
+      { key: 'stn_t1_fijo', label: 'Hasta 20.000 € (fijo)', unit: '€' },
+      { key: 'stn_t2_pct',  label: '20.001–100.000 € (%)',  unit: '%' }, { key: 'stn_t2_base', label: '20.001–100.000 € (base)', unit: '€' },
+      { key: 'stn_t3_pct',  label: '100.001–500.000 € (%)', unit: '%' }, { key: 'stn_t3_base', label: '100.001–500.000 € (base)', unit: '€' },
+      { key: 'stn_t4_pct',  label: '500.001–1M € (%)',      unit: '%' }, { key: 'stn_t4_base', label: '500.001–1M € (base)',      unit: '€' },
+      { key: 'stn_t5_pct',  label: '1M–2M € (%)',           unit: '%' }, { key: 'stn_t5_base', label: '1M–2M € (base)',           unit: '€' },
+      { key: 'stn_t6_pct',  label: 'Más de 2M € (%)',       unit: '%' },
+    ]},
+    { title: 'Sin Testamento – Judicial', fields: [
+      { key: 'stj_t1_fijo', label: 'Hasta 20.000 € (fijo)', unit: '€' },
+      { key: 'stj_t2_pct',  label: '20.001–100.000 € (%)',  unit: '%' }, { key: 'stj_t2_base', label: '20.001–100.000 € (base)', unit: '€' },
+      { key: 'stj_t3_pct',  label: '100.001–500.000 € (%)', unit: '%' }, { key: 'stj_t3_base', label: '100.001–500.000 € (base)', unit: '€' },
+      { key: 'stj_t4_pct',  label: '500.001–1M € (%)',      unit: '%' }, { key: 'stj_t4_base', label: '500.001–1M € (base)',      unit: '€' },
+      { key: 'stj_t5_pct',  label: '1M–2M € (%)',           unit: '%' }, { key: 'stj_t5_base', label: '1M–2M € (base)',           unit: '€' },
+      { key: 'stj_t6_pct',  label: 'Más de 2M € (%)',       unit: '%' },
+    ]},
+  ]},
+
+  { id: 'desahucio', label: 'Desahucio', groups: [
+    { title: 'Precios', fields: [
+      { key: 'precio_base', label: 'Precio base (falta de pago / precario)', unit: '€' },
+      { key: 'precio_alto', label: 'Precio alto (renta media/alta)',         unit: '€' },
+    ]},
+  ]},
+
+  { id: 'ejecuciones', label: 'Ejecuciones', groups: [
+    { title: 'Porcentajes por cuantía', fields: [
+      { key: 'pct_tramo1', label: 'Hasta 18.000 €',    unit: '%' },
+      { key: 'pct_tramo2', label: '18.001–50.000 €',   unit: '%' },
+      { key: 'pct_tramo3', label: 'Más de 50.000 €',   unit: '%' },
+      { key: 'minimo',     label: 'Honorario mínimo',  unit: '€' },
+      { key: 'apremio',    label: 'Ejecución Apremio', unit: '€' },
+    ]},
+  ]},
+
+  { id: 'monitorios', label: 'Monitorios', groups: [
+    { title: 'Precios por cuantía', fields: [
+      { key: 'tramo1', label: 'Hasta 18.000 €',  unit: '€' },
+      { key: 'tramo2', label: '18.001–50.000 €', unit: '€' },
+      { key: 'apremio',label: 'Ejecución Apremio', unit: '€' },
+    ]},
+  ]},
+
+  { id: 'laboral_empleado', label: 'Laboral Empleado', groups: [
+    { title: 'Precios fijos', fields: [
+      { key: 'conciliacion', label: 'Papeleta de Conciliación',         unit: '€' },
+      { key: 'juicio_bajo',  label: 'Juicio (0–25.000 €)',             unit: '€' },
+      { key: 'juicio_alto',  label: 'Juicio (>25.001 €)',              unit: '€' },
+      { key: 'pack_bajo',    label: 'Pack Conciliación+Juicio (bajo)', unit: '€' },
+      { key: 'pack_alto',    label: 'Pack Conciliación+Juicio (alto)', unit: '€' },
+    ]},
+  ]},
+
+  { id: 'laboral_empresa', label: 'Laboral Empresa', groups: [
+    { title: 'Precios fijos', fields: [
+      { key: 'papeleta',   label: 'Papeleta de Conciliación',         unit: '€' },
+      { key: 'juicio_bajo',label: 'Juicio (0–25.000 €)',              unit: '€' },
+      { key: 'juicio_alto',label: 'Juicio (>25.001 €)',               unit: '€' },
+      { key: 'pack_bajo',  label: 'Pack Conciliación+Juicio (bajo)',  unit: '€' },
+      { key: 'pack_alto',  label: 'Pack Conciliación+Juicio (alto)',  unit: '€' },
+    ]},
+    { title: '% Éxito escalonado sobre diferencia conseguida', fields: [
+      { key: 'pct_tramo1', label: 'Hasta 5.000 €',    unit: '%' },
+      { key: 'pct_tramo2', label: '5.001–30.000 €',   unit: '%' },
+      { key: 'pct_tramo3', label: 'Más de 30.000 €',  unit: '%' },
+    ]},
+  ]},
+
+  { id: 'laboral_incap', label: 'Laboral Incapacidades', groups: [
+    { title: 'Precios', fields: [
+      { key: 'simple',        label: 'Asunto Simple (base)',   unit: '€' },
+      { key: 'complejo',      label: 'Asunto Complejo (base)', unit: '€' },
+      { key: 'extrajudicial', label: 'Extrajudicial',          unit: '€' },
+    ]},
+  ]},
+
+  { id: 'extranjeria', label: 'Extranjería', groups: [
+    { title: 'Residencia', fields: [
+      { key: 'res_cuenta_ajena',     label: 'Cuenta ajena',          unit: '€' },
+      { key: 'res_familiar_ue',      label: 'Familiar UE',           unit: '€' },
+      { key: 'res_reagrupacion_1',   label: 'Reagrupación (1º)',     unit: '€' },
+      { key: 'res_reagrupacion_sig', label: 'Reagrupación (siguientes)', unit: '€' },
+      { key: 'res_arraigo',          label: 'Arraigo',               unit: '€' },
+      { key: 'res_pac',              label: 'PAC',                   unit: '€' },
+      { key: 'res_familiar_pac',     label: 'Familiar PAC',          unit: '€' },
+      { key: 'res_menores',          label: 'Menores',               unit: '€' },
+      { key: 'res_golden',           label: 'Golden Visa',           unit: '€' },
+      { key: 'res_golden_renov',     label: 'Renovación Golden Visa',unit: '€' },
+      { key: 'res_no_lucrativa',     label: 'No Lucrativa',          unit: '€' },
+      { key: 'res_nomada',           label: 'Nómada Digital',        unit: '€' },
+      { key: 'res_intraempresarial', label: 'Intraempresarial',      unit: '€' },
+      { key: 'res_familiar_espanol', label: 'Familiar Español',      unit: '€' },
+    ]},
+    { title: 'Visados / Nacionalidad / NIE', fields: [
+      { key: 'visado_turista',    label: 'Visado Turista',        unit: '€' },
+      { key: 'visado_residencia', label: 'Visado Residencia',     unit: '€' },
+      { key: 'nac_residencia',    label: 'Nac. por Residencia',   unit: '€' },
+      { key: 'nac_opcion',        label: 'Nac. por Opción',       unit: '€' },
+      { key: 'jura_nac',          label: 'Jura de Nacionalidad',  unit: '€' },
+      { key: 'nie',               label: 'NIE',                   unit: '€' },
+      { key: 'asignacion_nie',    label: 'Asignación NIE',        unit: '€' },
+      { key: 'cert_cue',          label: 'Certificado CUE',       unit: '€' },
+    ]},
+    { title: 'Otros servicios', fields: [
+      { key: 'carta_invitacion',      label: 'Carta de Invitación',          unit: '€' },
+      { key: 'estudios',              label: 'Estudios (Titular)',            unit: '€' },
+      { key: 'asilo',                 label: 'Asilo / Prot. Internacional',  unit: '€' },
+      { key: 'recurso_reposicion',    label: 'Recurso de Reposición',        unit: '€' },
+      { key: 'recurso_contencioso',   label: 'Recurso Contencioso-Adm.',     unit: '€' },
+      { key: 'medidas_cautelares',    label: 'Medidas Cautelares',           unit: '€' },
+      { key: 'homologacion',          label: 'Homologación Títulos',         unit: '€' },
+      { key: 'exequatur',             label: 'Exequátur',                    unit: '€' },
+      { key: 'asistencia_aeropuerto', label: 'Asistencia Aeropuerto',        unit: '€' },
+    ]},
+  ]},
+
+  { id: 'bancario', label: 'Bancario', groups: [
+    { title: 'Precios fijos + % éxito', fields: [
+      { key: 'preferentes_fijo',    label: 'Preferentes – Fijo',        unit: '€' },
+      { key: 'preferentes_pct',     label: 'Preferentes – % Éxito',     unit: '%' },
+      { key: 'promotoras_fijo',     label: 'Promotoras – Fijo',         unit: '€' },
+      { key: 'promotoras_pct',      label: 'Promotoras – % Éxito',      unit: '%' },
+      { key: 'clausula_suelo_fijo', label: 'Cláusula Suelo – Fijo',     unit: '€' },
+      { key: 'clausula_suelo_pct',  label: 'Cláusula Suelo – % Éxito',  unit: '%' },
+      { key: 'gastos_hipoteca_fijo',label: 'Gastos Hipoteca – Fijo',    unit: '€' },
+      { key: 'gastos_hipoteca_pct', label: 'Gastos Hipoteca – % Éxito', unit: '%' },
+      { key: 'suelo_gastos_fijo',   label: 'Suelo+Gastos – Fijo',       unit: '€' },
+      { key: 'suelo_gastos_pct',    label: 'Suelo+Gastos – % Éxito',    unit: '%' },
+      { key: 'reestructuracion_fijo',  label: 'Reestructuración – Fijo',   unit: '€' },
+      { key: 'reestructuracion_exito', label: 'Reestructuración – Prima',  unit: '€' },
+      { key: 'dacion_fijo',         label: 'Dación en Pago – Fijo',     unit: '€' },
+      { key: 'dacion_pct',          label: 'Dación en Pago – % Éxito',  unit: '%' },
+      { key: 'revolving_fijo',      label: 'Revolving – Fijo',          unit: '€' },
+      { key: 'revolving_pct',       label: 'Revolving – % Éxito',       unit: '%' },
+      { key: 'bankia_bajo',         label: 'Bankia/Popular (≤3.000 €)', unit: '€' },
+      { key: 'bankia_alto',         label: 'Bankia/Popular (>3.000 €)', unit: '€' },
+    ]},
+  ]},
+
+  { id: 'contratos', label: 'Contratos', groups: [
+    { title: 'Precios', fields: [
+      { key: 'compraventa_1',         label: 'Compra-Venta Vivienda – Opción 1', unit: '€' },
+      { key: 'compraventa_2',         label: 'Compra-Venta Vivienda – Opción 2', unit: '€' },
+      { key: 'compraventa_3',         label: 'Compra-Venta Vivienda – Opción 3', unit: '€' },
+      { key: 'redaccion',             label: 'Redacción de Contrato',            unit: '€' },
+      { key: 'negociacion',           label: 'Negociación',                      unit: '€' },
+      { key: 'redaccion_negociacion', label: 'Redacción + Negociación',          unit: '€' },
+      { key: 'resolucion_extrajudicial', label: 'Resolución Extrajudicial',      unit: '€' },
+    ]},
+  ]},
+
+  { id: 'franquicia', label: 'Franquicia', groups: [
+    { title: 'Componentes del paquete', fields: [
+      { key: 'informacion', label: 'Información',      unit: '€' },
+      { key: 'documentos',  label: 'Documentos Básicos', unit: '€' },
+      { key: 'contratos',   label: 'Contratos',        unit: '€' },
+      { key: 'manuales',    label: 'Manuales',         unit: '€' },
+    ]},
+  ]},
+
+  { id: 'asesoria', label: 'Asesoría', groups: [
+    { title: 'Servicios puntuales', fields: [
+      { key: 'autonomo_ayuda', label: 'Solicitud ayuda autónomo', unit: '€' },
+      { key: 'sl',             label: 'Creación S.L.',            unit: '€' },
+      { key: 'renta_basica',   label: 'Renta básica',             unit: '€' },
+      { key: 'renta_compleja', label: 'Renta compleja',           unit: '€' },
+    ]},
+    { title: 'Igualas Estándar (€/mes)', fields: [
+      { key: 'std_1', label: 'Tramo 1', unit: '€' },
+      { key: 'std_2', label: 'Tramo 2', unit: '€' },
+      { key: 'std_3', label: 'Tramo 3', unit: '€' },
+      { key: 'std_4', label: 'Tramo 4', unit: '€' },
+      { key: 'std_5', label: 'Tramo 5', unit: '€' },
+    ]},
+    { title: 'Igualas Oro (€/mes)', fields: [
+      { key: 'oro_1', label: 'Tramo 1', unit: '€' },
+      { key: 'oro_2', label: 'Tramo 2', unit: '€' },
+      { key: 'oro_3', label: 'Tramo 3', unit: '€' },
+      { key: 'oro_4', label: 'Tramo 4', unit: '€' },
+      { key: 'oro_5', label: 'Tramo 5', unit: '€' },
+    ]},
+    { title: 'Igualas Platino (€/mes)', fields: [
+      { key: 'pla_1', label: 'Tramo 1', unit: '€' },
+      { key: 'pla_2', label: 'Tramo 2', unit: '€' },
+      { key: 'pla_3', label: 'Tramo 3', unit: '€' },
+      { key: 'pla_4', label: 'Tramo 4', unit: '€' },
+      { key: 'pla_5', label: 'Tramo 5', unit: '€' },
+    ]},
+  ]},
+
+  { id: 'penal', label: 'Penal', groups: [
+    { title: 'Denunciado / Acusado', fields: [
+      { key: 'den_diligencias',  label: 'Diligencias Previas',         unit: '€' },
+      { key: 'den_juicio',       label: 'Diligencias + Juicio',        unit: '€' },
+      { key: 'den_completo',     label: 'Procedimiento completo',      unit: '€' },
+      { key: 'den_pct_tramo1',   label: '% Éxito hasta 18.000 €',     unit: '%' },
+      { key: 'den_pct_tramo2',   label: '% Éxito 18.001–50.000 €',    unit: '%' },
+      { key: 'den_pct_tramo3',   label: '% Éxito >50.000 €',          unit: '%' },
+    ]},
+    { title: 'Denunciante / Acusación particular', fields: [
+      { key: 'dnte_diligencias', label: 'Diligencias Previas',         unit: '€' },
+      { key: 'dnte_juicio',      label: 'Diligencias + Juicio',        unit: '€' },
+      { key: 'dnte_recurso_ap',  label: 'Recurso Audiencia Provincial',unit: '€' },
+      { key: 'descuento_segundo',label: 'Descuento 2º presupuesto',    unit: '%' },
+    ]},
+    { title: 'Servicios precio fijo', fields: [
+      { key: 'delito_leve',               label: 'Juicio delito leve',             unit: '€' },
+      { key: 'delito_leve_averiguacion',  label: 'Delito leve + Averiguación',     unit: '€' },
+      { key: 'juicio_rapido',             label: 'Juicio Rápido (con IVA)',         unit: '€' },
+      { key: 'recurso_apelacion_sob',     label: 'Recurso apelación sobreseimiento',unit: '€' },
+      { key: 'asistencia_comisaria',      label: 'Asistencia detenido comisaría',  unit: '€' },
+      { key: 'asistencia_comisaria_juzgado', label: 'Comisaría + Juzgado',        unit: '€' },
+      { key: 'cancelacion_antecedentes',  label: 'Cancelación antecedentes',       unit: '€' },
+      { key: 'cancelacion_tramite',       label: 'Cancelación (trámite)',           unit: '€' },
+      { key: 'verificacion_antecedentes', label: 'Verificación antecedentes',      unit: '€' },
+      { key: 'recurso_ingreso_prision',   label: 'Recurso auto ingreso prisión',   unit: '€' },
+      { key: 'medidas_cautelares',        label: 'Medidas cautelares',             unit: '€' },
+      { key: 'salida_centro',             label: 'Salida centro penitenciario',    unit: '€' },
+      { key: 'asesoramiento_penitenciario',label: 'Asesoramiento penitenciario/año',unit: '€' },
+    ]},
+  ]},
+
+  { id: 'administrativo', label: 'Administrativo', groups: [
+    { title: 'Contencioso Administrativo', fields: [
+      { key: 'contencioso_base', label: 'Precio base',           unit: '€' },
+      { key: 'pct_tramo1',       label: 'Hasta 18.000 € (%)',    unit: '%' },
+      { key: 'pct_tramo2',       label: '18.001–50.000 € (%)',   unit: '%' },
+      { key: 'pct_tramo3',       label: 'Más de 50.000 € (%)',   unit: '%' },
+    ]},
+    { title: 'Plusvalía', fields: [
+      { key: 'plusvalia_extrajudicial', label: 'Extrajudicial (fijo)', unit: '€' },
+      { key: 'plusvalia_judicial_pct',  label: 'Judicial (% cobrado)', unit: '%' },
+    ]},
+    { title: 'Servicios fijos', fields: [
+      { key: 'renta_minima',              label: 'Renta Mínima Vital',             unit: '€' },
+      { key: 'adopcion',                  label: 'Adopción',                       unit: '€' },
+      { key: 'pension_hijo',              label: 'Pensión por Hijo',               unit: '€' },
+      { key: 'pension_hijo_incremento',   label: 'Pensión Hijo – Incremento',      unit: '%' },
+      { key: 'alegaciones',               label: 'Alegaciones Sin Cuantía',        unit: '€' },
+      { key: 'homologacion_ue',           label: 'Homologación Médico – UE',       unit: '€' },
+      { key: 'homologacion_fase_previa',  label: 'Homologación – Fase Previa',     unit: '€' },
+      { key: 'homologacion_contencioso',  label: 'Homologación – Contencioso',     unit: '€' },
+    ]},
+  ]},
+];
+
+// ─── ESTADO ───────────────────────────────────────────────────────────────────
+let configData = {};
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+async function sha256(text) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const pw = document.getElementById('pwInput').value;
+  const hash = await sha256(pw);
+  if (hash === PW_HASH) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    const token = localStorage.getItem('lm_gh_token') || '';
+    if (token) document.getElementById('ghToken').value = token;
+    await loadConfig();
+  } else {
+    const err = document.getElementById('loginError');
+    err.style.display = 'block';
+    setTimeout(() => err.style.display = 'none', 3000);
+  }
+}
+
+function logout() {
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminPanel').style.display = 'none';
+  document.getElementById('pwInput').value = '';
+}
+
+// ─── TOKEN ────────────────────────────────────────────────────────────────────
+function saveToken() {
+  const t = document.getElementById('ghToken').value.trim();
+  if (t) { localStorage.setItem('lm_gh_token', t); showStatus('Token guardado', true); }
+}
+
+// ─── RENDER ADMIN ─────────────────────────────────────────────────────────────
+function buildUI() {
+  const tabsEl = document.getElementById('tabs');
+  const secEl  = document.getElementById('sectionsContainer');
+  tabsEl.innerHTML = '';
+  secEl.innerHTML  = '';
+
+  SCHEMA.forEach((sec, i) => {
+    // Tab button
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (i === 0 ? ' active' : '');
+    btn.textContent = sec.label;
+    btn.onclick = () => switchTab(sec.id);
+    tabsEl.appendChild(btn);
+
+    // Section div
+    const div = document.createElement('div');
+    div.id = 'sec_' + sec.id;
+    div.className = 'section' + (i === 0 ? ' active' : '');
+
+    sec.groups.forEach(group => {
+      const card = document.createElement('div');
+      card.className = 'section-card';
+      card.innerHTML = `<h2>${group.title}</h2>`;
+      const grid = document.createElement('div');
+      grid.className = 'fields-grid';
+      group.fields.forEach(f => {
+        const val = (configData[sec.id] || {})[f.key] ?? '';
+        grid.innerHTML += `
+          <div class="field-group">
+            <label>${f.label}</label>
+            <input type="number" step="0.01" id="f_${sec.id}_${f.key}" value="${val}">
+            <span class="suffix">${f.unit}</span>
+          </div>`;
+      });
+      card.appendChild(grid);
+      div.appendChild(card);
+    });
+    secEl.appendChild(div);
+  });
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', SCHEMA[i].id === id));
+  document.querySelectorAll('.section').forEach(s => s.classList.toggle('active', s.id === 'sec_' + id));
+}
+
+// ─── LOAD CONFIG ─────────────────────────────────────────────────────────────
+async function loadConfig() {
+  try {
+    const r = await fetch(`https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main/${CONFIG_PATH}?t=${Date.now()}`);
+    configData = await r.json();
+  } catch(e) { configData = {}; }
+  buildUI();
+}
+
+// ─── SAVE CONFIG ─────────────────────────────────────────────────────────────
+function collectConfig() {
+  const out = {};
+  SCHEMA.forEach(sec => {
+    out[sec.id] = {};
+    sec.groups.forEach(group => {
+      group.fields.forEach(f => {
+        const el = document.getElementById(`f_${sec.id}_${f.key}`);
+        if (el) out[sec.id][f.key] = parseFloat(el.value) || 0;
+      });
+    });
+  });
+  return out;
+}
+
+async function saveConfig() {
+  const token = document.getElementById('ghToken').value.trim();
+  if (!token) { showStatus('Introduce el token de GitHub primero', false); return; }
+
+  const btn = document.getElementById('btnSave');
+  btn.disabled = true;
+  showStatus('Guardando…', null);
+
+  try {
+    // Obtener SHA actual del archivo
+    const metaRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${CONFIG_PATH}`, {
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json' }
+    });
+    const meta = await metaRes.json();
+    const sha = meta.sha;
+
+    // Subir nuevo contenido
+    const newConfig = collectConfig();
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(newConfig, null, 2))));
+    const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/${CONFIG_PATH}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: 'Actualización de precios desde panel admin', content, sha })
+    });
+    if (res.ok) { showStatus('✓ Cambios guardados correctamente', true); configData = newConfig; }
+    else { showStatus('Error al guardar. Comprueba el token.', false); }
+  } catch(e) { showStatus('Error de conexión', false); }
+
+  btn.disabled = false;
+}
+
+function showStatus(msg, ok) {
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.className = 'save-status' + (ok === true ? ' ok' : ok === false ? ' err' : '');
+  if (ok !== null) setTimeout(() => el.textContent = '', 4000);
+}
+</script>
+</body>
+</html>
