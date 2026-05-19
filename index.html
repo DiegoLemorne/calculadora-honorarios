@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Honorarios Legales 2026</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #1a1a2e; }
+  header { background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 24px 32px; }
+  header h1 { font-size: 1.6rem; font-weight: 700; }
+  header p { opacity: 0.7; font-size: 0.9rem; margin-top: 4px; }
+
+  .container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+
+  .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+  .card h2 { font-size: 1rem; font-weight: 700; color: #16213e; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  label { display: block; font-size: 0.85rem; font-weight: 600; color: #555; margin-bottom: 6px; }
+  select, input[type=number] {
+    width: 100%; padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px;
+    font-size: 0.95rem; color: #1a1a2e; background: #fafafa;
+    appearance: none; -webkit-appearance: none;
+    transition: border 0.2s;
+  }
+  select:focus, input:focus { outline: none; border-color: #4361ee; background: white; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width: 600px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .options-group { margin-top: 16px; }
+  .options-group h3 { font-size: 0.8rem; font-weight: 700; color: #888; text-transform: uppercase; margin-bottom: 10px; }
+  .check-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
+  .check-item:hover { background: #f5f5f5; }
+  .check-item input[type=checkbox] { width: 18px; height: 18px; accent-color: #4361ee; cursor: pointer; flex-shrink: 0; }
+  .check-item .item-label { font-size: 0.9rem; flex: 1; }
+  .check-item .item-price { font-size: 0.85rem; color: #4361ee; font-weight: 600; }
+
+  .amount-input { margin-top: 16px; }
+
+  /* Resultado */
+  .result-box { background: linear-gradient(135deg, #4361ee, #3a0ca3); border-radius: 12px; padding: 28px; color: white; margin-top: 8px; }
+  .result-box h2 { font-size: 0.9rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; }
+  .result-total { font-size: 2.8rem; font-weight: 800; margin: 8px 0; }
+  .result-iva { font-size: 1rem; opacity: 0.75; }
+  .result-breakdown { margin-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 16px; }
+  .breakdown-line { display: flex; justify-content: space-between; font-size: 0.88rem; padding: 4px 0; opacity: 0.9; }
+  .breakdown-line.total-line { font-weight: 700; opacity: 1; border-top: 1px solid rgba(255,255,255,0.3); padding-top: 8px; margin-top: 4px; }
+
+  .hidden { display: none !important; }
+
+  .tag { display: inline-block; background: #eef0ff; color: #4361ee; font-size: 0.75rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; margin-left: 8px; }
+
+  .reset-btn { background: none; border: 1px solid #ddd; color: #666; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: 0.85rem; margin-top: 12px; transition: all 0.2s; }
+  .reset-btn:hover { border-color: #4361ee; color: #4361ee; }
+
+  .note { font-size: 0.8rem; color: #888; margin-top: 10px; font-style: italic; }
+
+  .area-btn-group { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0; }
+  .area-btn { padding: 8px 16px; border-radius: 20px; border: 2px solid #ddd; background: white; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; color: #555; }
+  .area-btn:hover { border-color: #4361ee; color: #4361ee; }
+  .area-btn.active { border-color: #4361ee; background: #4361ee; color: white; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Calculadora de Honorarios Legales</h1>
+  <p>Tarifas 2026 &mdash; Selecciona el área y el tipo de asunto</p>
+</header>
+
+<div class="container">
+
+  <!-- Selector de área -->
+  <div class="card">
+    <h2>Área de Derecho</h2>
+    <div class="area-btn-group" id="areaBtns"></div>
+  </div>
+
+  <!-- Panel dinámico -->
+  <div class="card" id="servicePanel" class="hidden">
+    <h2 id="serviceTitle">Servicio</h2>
+    <div id="serviceContent"></div>
+  </div>
+
+  <!-- Resultado -->
+  <div class="result-box" id="resultBox" style="display:none">
+    <h2>Honorarios estimados</h2>
+    <div class="result-total" id="resTotal">0,00 €</div>
+    <div class="result-iva" id="resIva"></div>
+    <div class="result-breakdown" id="resBreakdown"></div>
+    <button class="reset-btn" onclick="resetCalc()">Nueva consulta</button>
+    <p class="note" style="color:rgba(255,255,255,0.6); margin-top:12px;">* Honorarios orientativos sin IVA salvo indicación. Consulta con el despacho para presupuesto definitivo.</p>
+  </div>
+
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const AREAS = [
+  { id: 'familia', label: 'Familia' },
+  { id: 'civil', label: 'Civil / Concurso' },
+  { id: 'herencia_contenciosa', label: 'Herencia Contenciosa' },
+  { id: 'herencia_mutuo', label: 'Herencia Mutuo Acuerdo' },
+  { id: 'desahucio', label: 'Desahucio' },
+  { id: 'ejecuciones', label: 'Ejecuciones' },
+  { id: 'monitorios', label: 'Monitorios' },
+  { id: 'laboral_empleado', label: 'Laboral Empleado' },
+  { id: 'laboral_empresa', label: 'Laboral Empresa' },
+  { id: 'laboral_incap', label: 'Laboral Incapacidades' },
+  { id: 'extranjeria', label: 'Extranjería' },
+  { id: 'bancario', label: 'Bancario' },
+  { id: 'contratos', label: 'Contratos' },
+  { id: 'franquicia', label: 'Franquicia' },
+  { id: 'asesoria', label: 'Asesoría' },
+  { id: 'penal', label: 'Penal' },
+  { id: 'administrativo', label: 'Administrativo' },
+];
+
+// Calcula precio escalonado (tramos acumulativos)
+function calcTramos(valor, tramos) {
+  // tramos: [{hasta, pct, fijo}] — fijo se usa cuando no hay pct
+  let total = 0;
+  for (const t of tramos) {
+    if (valor <= 0) break;
+    if (t.fijo !== undefined) { total = t.fijo; break; }
+    const base = t.hasta ? Math.min(valor, t.hasta - (t.desde || 0)) : valor;
+    total += base * t.pct / 100;
+    if (t.hasta) valor -= base;
+  }
+  return total;
+}
+
+// ─── RENDERERS POR ÁREA ─────────────────────────────────────────────────────
+
+const RENDERERS = {
+
+  // ── FAMILIA ──────────────────────────────────────────────────────────────
+  familia: () => `
+    <div>
+      <label>Tipo de procedimiento</label>
+      <select id="fam_tipo" onchange="renderFamilia()">
+        <option value="">-- Selecciona --</option>
+        <option value="mutuo">Mutuo Acuerdo (Divorcio / Medidas)</option>
+        <option value="contencioso">Contencioso (Divorcio / Medidas)</option>
+        <option value="medidas_prov">Medidas Provisionales</option>
+        <option value="reconvencion">Reconvención</option>
+        <option value="nulidad">Nulidad Matrimonial</option>
+        <option value="incapacitacion">Incapacitación</option>
+        <option value="gananciales">Liquidación de Gananciales</option>
+        <option value="mediacion">Mediación Civil (Requisito Procedibilidad)</option>
+      </select>
+    </div>
+    <div id="fam_extra"></div>
+  `,
+
+  // ── CIVIL ─────────────────────────────────────────────────────────────────
+  civil: () => `
+    <div>
+      <label>Tipo de actuación</label>
+      <select id="civ_tipo" onchange="calcCivil()">
+        <option value="">-- Selecciona --</option>
+        <option value="judicial">Procedimiento Judicial</option>
+        <option value="reconvencion">Reconvención</option>
+        <option value="apelacion">Recurso de Apelación</option>
+        <option value="casacion">Recurso de Casación</option>
+        <option value="extrajudicial">Procedimiento Extrajudicial</option>
+        <option value="clausula_rebus">Cláusula Rebus / Renegociación</option>
+      </select>
+    </div>
+    <div id="civ_cuantia_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Cuantía reclamada (€)</label>
+      <input type="number" id="civ_cuantia" placeholder="Ej: 25000" min="0" oninput="calcCivil()">
+    </div>
+  `,
+
+  // ── HERENCIA CONTENCIOSA ──────────────────────────────────────────────────
+  herencia_contenciosa: () => `
+    <div>
+      <label>Tipo</label>
+      <select id="hc_tipo" onchange="calcHC()">
+        <option value="">-- Selecciona --</option>
+        <option value="impugnacion">Impugnación de Testamento</option>
+        <option value="division">División Judicial de la Herencia</option>
+      </select>
+    </div>
+    <div id="hc_cuantia_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Valor de la herencia / incremento conseguido (€)</label>
+      <input type="number" id="hc_cuantia" placeholder="Ej: 150000" min="0" oninput="calcHC()">
+    </div>
+  `,
+
+  // ── HERENCIA MUTUO ACUERDO ────────────────────────────────────────────────
+  herencia_mutuo: () => `
+    <div>
+      <label>Tipo</label>
+      <select id="hm_tipo" onchange="calcHM()">
+        <option value="">-- Selecciona --</option>
+        <option value="con_testamento">Con Testamento</option>
+        <option value="sin_testamento_notarial">Sin Testamento – Declaración Notarial</option>
+        <option value="sin_testamento_judicial">Sin Testamento – Declaración Judicial</option>
+        <option value="renuncia_estudio">Renuncia (Estudio)</option>
+        <option value="renuncia_tramite">Renuncia (Trámite)</option>
+        <option value="testamento_simple">Redacción de Testamento (Simple)</option>
+        <option value="testamento_complejo">Redacción de Testamento (Complejo)</option>
+      </select>
+    </div>
+    <div id="hm_cuantia_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Valor de la herencia (€)</label>
+      <input type="number" id="hm_cuantia" placeholder="Ej: 200000" min="0" oninput="calcHM()">
+    </div>
+  `,
+
+  // ── DESAHUCIO ─────────────────────────────────────────────────────────────
+  desahucio: () => `
+    <div>
+      <label>Tipo de desahucio</label>
+      <select id="des_tipo" onchange="calcDesahucio()">
+        <option value="">-- Selecciona --</option>
+        <option value="falta_pago">Por Falta de Pago</option>
+        <option value="precario">En Precario</option>
+        <option value="mensual_bajo">Renta mensual hasta 750€</option>
+        <option value="mensual_medio">Renta mensual 751€–1.500€</option>
+        <option value="mensual_alto">Renta mensual >1.500€</option>
+      </select>
+    </div>
+  `,
+
+  // ── EJECUCIONES ──────────────────────────────────────────────────────────
+  ejecuciones: () => `
+    <div>
+      <label>Tipo de ejecución</label>
+      <select id="eje_tipo" onchange="calcEjecuciones()">
+        <option value="">-- Selecciona --</option>
+        <option value="judicial">Ejecución Judicial por cuantía</option>
+        <option value="apremio">Ejecución en Vía de Apremio</option>
+        <option value="obligacion_hacer">Ejecución de Obligación de Hacer</option>
+        <option value="nulidad_actuaciones">Solicitud de Nulidad de Actuaciones</option>
+      </select>
+    </div>
+    <div id="eje_cuantia_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Cuantía ejecutada (€)</label>
+      <input type="number" id="eje_cuantia" placeholder="Ej: 30000" min="0" oninput="calcEjecuciones()">
+    </div>
+  `,
+
+  // ── MONITORIOS ────────────────────────────────────────────────────────────
+  monitorios: () => `
+    <div>
+      <label>Cuantía reclamada (€)</label>
+      <input type="number" id="mon_cuantia" placeholder="Ej: 5000" min="0" oninput="calcMonitorios()" style="margin-top:8px">
+    </div>
+    <div class="options-group">
+      <h3>Actuaciones adicionales</h3>
+      <label class="check-item">
+        <input type="checkbox" id="mon_apremio" onchange="calcMonitorios()">
+        <span class="item-label">Ejecución en vía de apremio</span>
+        <span class="item-price">+ 800 €</span>
+      </label>
+    </div>
+  `,
+
+  // ── LABORAL EMPLEADO ─────────────────────────────────────────────────────
+  laboral_empleado: () => `
+    <div>
+      <label>Tipo de actuación</label>
+      <select id="lab_tipo" onchange="calcLaboral()">
+        <option value="">-- Selecciona --</option>
+        <option value="conciliacion">Solo Papeleta de Conciliación</option>
+        <option value="juicio_bajo">Juicio (cuantía 0–25.000€)</option>
+        <option value="juicio_alto">Juicio (cuantía >25.001€)</option>
+        <option value="pack_bajo">Pack Conciliación + Juicio (0–25.000€)</option>
+        <option value="pack_alto">Pack Conciliación + Juicio (>25.001€)</option>
+      </select>
+    </div>
+    <div id="lab_pct_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Porcentaje de éxito a aplicar</label>
+      <select id="lab_pct_sel" onchange="calcLaboral()">
+        <option value="">-- Selecciona % --</option>
+        <option value="10">10%</option>
+        <option value="12">12%</option>
+        <option value="15">15%</option>
+      </select>
+      <label style="margin-top:12px">Importe conseguido (€) <span class="tag">Base del %</span></label>
+      <input type="number" id="lab_diferencia" placeholder="Ej: 10000" min="0" oninput="calcLaboral()">
+    </div>
+  `,
+
+  // ── LABORAL EMPRESA ──────────────────────────────────────────────────────
+  laboral_empresa: () => `
+    <div>
+      <label>Tipo de actuación</label>
+      <select id="lemp_tipo" onchange="calcLaboralEmpresa()">
+        <option value="">-- Selecciona --</option>
+        <option value="papeleta">Papeleta de Conciliación</option>
+        <option value="juicio_bajo">Juicio (0–25.000€)</option>
+        <option value="juicio_alto">Juicio (>25.001€)</option>
+        <option value="pack_bajo">Pack Conciliación + Juicio (0–25.000€)</option>
+        <option value="pack_alto">Pack Conciliación + Juicio (>25.001€)</option>
+      </select>
+    </div>
+    <div id="lemp_pct_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Diferencia entre lo solicitado y lo abonado (€) <span class="tag">Para % éxito</span></label>
+      <input type="number" id="lemp_diferencia" placeholder="Ej: 10000" min="0" oninput="calcLaboralEmpresa()">
+      <p class="note">Hasta 5.000€ = 15% · hasta 30.000€ = 12% · resto = 10%</p>
+    </div>
+  `,
+
+  // ── LABORAL INCAPACIDADES ────────────────────────────────────────────────
+  laboral_incap: () => `
+    <div>
+      <label>Tipo de asunto</label>
+      <select id="linc_tipo" onchange="calcLaboralIncap()">
+        <option value="">-- Selecciona --</option>
+        <option value="simple">Asunto Simple (base 5.000€)</option>
+        <option value="complejo">Asunto Complejo (base 12.000€)</option>
+        <option value="extrajudicial">Reclamación Previa / Extrajudicial</option>
+      </select>
+    </div>
+    <p class="note" style="margin-top:10px">Se añade el % + IVA de una anualidad de la pensión conseguida.</p>
+  `,
+
+  // ── EXTRANJERÍA ───────────────────────────────────────────────────────────
+  extranjeria: () => `
+    <div>
+      <label>Tipo de gestión</label>
+      <select id="ext_tipo" onchange="calcExtranjeria()">
+        <option value="">-- Selecciona --</option>
+        <optgroup label="Residencia">
+          <option value="res_cuenta_ajena">Residencia inicial (cuenta ajena)</option>
+          <option value="res_familiar_ue">Residencia familiar UE</option>
+          <option value="res_reagrupacion_1">Reagrupación Familiar (primero)</option>
+          <option value="res_reagrupacion_sig">Reagrupación Familiar (siguientes)</option>
+          <option value="res_arraigo">Residencia por Arraigo</option>
+          <option value="res_pac">Residencia PAC</option>
+          <option value="res_familiar_pac">Residencia Familiar de PAC</option>
+          <option value="res_menores">Residencia Menores</option>
+          <option value="res_golden">Golden Visa (Inversión)</option>
+          <option value="res_golden_renov">Renovación Golden Visa</option>
+          <option value="res_no_lucrativa">Residencia No Lucrativa</option>
+          <option value="res_nomada">Nómada Digital</option>
+          <option value="res_intraempresarial">Traslado Intraempresarial</option>
+          <option value="res_familiar_espanol">Familiar Ciudadano Español</option>
+        </optgroup>
+        <optgroup label="Visados">
+          <option value="visado_turista">Visado Turista</option>
+          <option value="visado_residencia">Visado Residencia / Trabajo</option>
+        </optgroup>
+        <optgroup label="Nacionalidad">
+          <option value="nac_residencia">Nacionalidad por Residencia</option>
+          <option value="nac_opcion">Nacionalidad por Opción</option>
+          <option value="jura_nac">Jura de Nacionalidad</option>
+        </optgroup>
+        <optgroup label="NIE / Documentación">
+          <option value="nie">NIE</option>
+          <option value="asignacion_nie">Asignación NIE</option>
+          <option value="cert_cue">Certificado CUE</option>
+        </optgroup>
+        <optgroup label="Otros">
+          <option value="carta_invitacion">Carta de Invitación</option>
+          <option value="estudios">Estancia por Estudios (Titular)</option>
+          <option value="asilo">Solicitud Asilo / Protección Internacional</option>
+          <option value="recurso_reposicion">Recurso de Reposición</option>
+          <option value="recurso_contencioso">Recurso Contencioso-Administrativo</option>
+          <option value="medidas_cautelares">Medidas Cautelares</option>
+          <option value="homologacion">Homologación de Títulos</option>
+          <option value="exequatur">Exequátur</option>
+          <option value="asistencia_aeropuerto">Asistencia detenido aeropuerto</option>
+        </optgroup>
+      </select>
+    </div>
+  `,
+
+  // ── BANCARIO ──────────────────────────────────────────────────────────────
+  bancario: () => `
+    <div>
+      <label>Tipo de reclamación</label>
+      <select id="ban_tipo" onchange="calcBancario()">
+        <option value="">-- Selecciona --</option>
+        <option value="preferentes">Acciones Preferentes</option>
+        <option value="promotoras">Promotoras</option>
+        <option value="clausula_suelo">Cláusula Suelo</option>
+        <option value="gastos_hipoteca">Gastos Constitución Hipotecaria</option>
+        <option value="suelo_gastos">Cláusula Suelo + Gastos</option>
+        <option value="reestructuracion">Reestructuración Hipotecaria</option>
+        <option value="dacion">Dación en Pago Extrajudicial</option>
+        <option value="revolving">Tarjetas Revolving</option>
+        <option value="bankia_bajo">Bankia/Popular (hasta 3.000€)</option>
+        <option value="bankia_alto">Bankia/Popular (más de 3.000€)</option>
+      </select>
+    </div>
+    <div id="ban_importe_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Importe reclamado (€)</label>
+      <input type="number" id="ban_importe" placeholder="Ej: 15000" min="0" oninput="calcBancario()">
+    </div>
+  `,
+
+  // ── CONTRATOS ─────────────────────────────────────────────────────────────
+  contratos: () => `
+    <div>
+      <label>Tipo de servicio</label>
+      <select id="con_tipo" onchange="calcContratos()">
+        <option value="">-- Selecciona --</option>
+        <option value="compraventa_1">Compra-Venta Vivienda (Opción 1)</option>
+        <option value="compraventa_2">Compra-Venta Vivienda (Opción 2)</option>
+        <option value="compraventa_3">Compra-Venta Vivienda (Opción 3)</option>
+        <option value="redaccion">Redacción de Contrato</option>
+        <option value="negociacion">Negociación</option>
+        <option value="redaccion_negociacion">Redacción + Negociación</option>
+        <option value="resolucion_extrajudicial">Resolución Extrajudicial</option>
+      </select>
+    </div>
+  `,
+
+  // ── FRANQUICIA ────────────────────────────────────────────────────────────
+  franquicia: () => `
+    <div>
+      <label>Servicios incluidos</label>
+    </div>
+    <div class="options-group">
+      <label class="check-item">
+        <input type="checkbox" id="fra_info" checked onchange="calcFranquicia()">
+        <span class="item-label">Información (informe requisitos marca)</span>
+        <span class="item-price">359 €</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" id="fra_docs" checked onchange="calcFranquicia()">
+        <span class="item-label">Documentos Básicos (DPI, cláusulas, anexos)</span>
+        <span class="item-price">239 €</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" id="fra_contratos" checked onchange="calcFranquicia()">
+        <span class="item-label">Contratos (precontrato + contrato general)</span>
+        <span class="item-price">1.439 €</span>
+      </label>
+      <label class="check-item">
+        <input type="checkbox" id="fra_manuales" checked onchange="calcFranquicia()">
+        <span class="item-label">Manuales (índice y requisitos)</span>
+        <span class="item-price">239 €</span>
+      </label>
+    </div>
+  `,
+
+  // ── PENAL ─────────────────────────────────────────────────────────────────
+  penal: () => `
+    <div>
+      <label>Rol del cliente</label>
+      <select id="pen_rol" onchange="renderPenal()">
+        <option value="">-- Selecciona --</option>
+        <option value="denunciado">Denunciado / Acusado</option>
+        <option value="denunciante">Denunciante / Acusación Particular</option>
+        <option value="fijo">Servicios de precio fijo</option>
+      </select>
+    </div>
+    <div id="pen_extra"></div>
+  `,
+
+  // ── ADMINISTRATIVO ───────────────────────────────────────────────────────
+  administrativo: () => `
+    <div>
+      <label>Tipo de asunto</label>
+      <select id="adm_tipo" onchange="calcAdministrativo()">
+        <option value="">-- Selecciona --</option>
+        <optgroup label="Procedimientos">
+          <option value="contencioso">Contencioso Administrativo</option>
+          <option value="rec_previa">Reclamación Previa / Recurso de Alzada</option>
+          <option value="conjunto">Reclamación Previa + Contencioso (conjunto)</option>
+        </optgroup>
+        <optgroup label="Plusvalía">
+          <option value="plusvalia_ext">Devolución Plusvalía – Extrajudicial</option>
+          <option value="plusvalia_jud">Devolución Plusvalía – Judicial (% sobre cobrado)</option>
+        </optgroup>
+        <optgroup label="Precio fijo">
+          <option value="renta_minima">Solicitud Renta Mínima Vital</option>
+          <option value="adopcion">Solicitud de Adopción</option>
+          <option value="pension_hijo">Solicitud / Incremento Pensión por Hijo</option>
+          <option value="alegaciones">Alegaciones Sin Cuantía</option>
+          <option value="homologacion_ue">Homologación Título Médico (UE)</option>
+          <option value="homologacion_fase">Homologación Título Médico (fuera UE – Fase Previa)</option>
+          <option value="homologacion_cont">Homologación Título Médico (fuera UE – Contencioso)</option>
+        </optgroup>
+      </select>
+    </div>
+    <div id="adm_cuantia_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Cuantía reclamada (€)</label>
+      <input type="number" id="adm_cuantia" placeholder="Ej: 25000" min="0" oninput="calcAdministrativo()">
+      <p class="note">Hasta 18.000€ = 4% · 18.001–50.000€ = 3% · superior a 50.000€ = 2%</p>
+    </div>
+    <div id="adm_cobrado_wrap" class="hidden amount-input">
+      <label style="margin-top:16px">Importe cobrado / recuperado (€)</label>
+      <input type="number" id="adm_cobrado" placeholder="Ej: 8000" min="0" oninput="calcAdministrativo()">
+      <p class="note">10% sobre lo cobrado, cuando se cobre</p>
+    </div>
+  `,
+
+  // ── ASESORÍA ──────────────────────────────────────────────────────────────
+  asesoria: () => `
+    <div>
+      <label>Tipo de servicio</label>
+      <select id="ase_tipo" onchange="calcAsesoria()">
+        <option value="">-- Selecciona --</option>
+        <option value="autonomo_ayuda">Solicitud ayuda autónomo</option>
+        <option value="sl">Creación Sociedad Limitada</option>
+        <option value="renta_basica">Declaración Renta (básica)</option>
+        <option value="renta_compleja">Declaración Renta (compleja)</option>
+        <option value="std_1">Iguala Estándar – Tramo 1</option>
+        <option value="std_2">Iguala Estándar – Tramo 2</option>
+        <option value="std_3">Iguala Estándar – Tramo 3</option>
+        <option value="std_4">Iguala Estándar – Tramo 4</option>
+        <option value="std_5">Iguala Estándar – Tramo 5</option>
+        <option value="oro_1">Iguala Oro – Tramo 1</option>
+        <option value="oro_2">Iguala Oro – Tramo 2</option>
+        <option value="oro_3">Iguala Oro – Tramo 3</option>
+        <option value="oro_4">Iguala Oro – Tramo 4</option>
+        <option value="oro_5">Iguala Oro – Tramo 5</option>
+        <option value="pla_1">Iguala Platino – Tramo 1</option>
+        <option value="pla_2">Iguala Platino – Tramo 2</option>
+        <option value="pla_3">Iguala Platino – Tramo 3</option>
+        <option value="pla_4">Iguala Platino – Tramo 4</option>
+        <option value="pla_5">Iguala Platino – Tramo 5</option>
+      </select>
+    </div>
+  `,
+};
+
+// ─── CALCULADORAS ───────────────────────────────────────────────────────────
+
+function renderFamilia() {
+  const tipo = document.getElementById('fam_tipo').value;
+  const wrap = document.getElementById('fam_extra');
+  wrap.innerHTML = '';
+  if (!tipo) return;
+
+  let html = '';
+  let lines = [];
+
+  if (tipo === 'mutuo') {
+    html = `
+      <div class="options-group">
+        <h3>Complementos (suma al precio base 513,50 €)</h3>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="585" onchange="calcFamiliaOpts()">
+          <span class="item-label">Dos cónyuges representados</span><span class="item-price">+ 585 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="260" onchange="calcFamiliaOpts()">
+          <span class="item-label">Con bienes</span><span class="item-price">+ 260 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="260" onchange="calcFamiliaOpts()">
+          <span class="item-label">Con hijos menores</span><span class="item-price">+ 260 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="130" onchange="calcFamiliaOpts()">
+          <span class="item-label">Con pensión compensatoria</span><span class="item-price">+ 130 €</span></label>
+      </div>`;
+    wrap.innerHTML = html;
+    calcFamiliaOpts(513.5);
+  } else if (tipo === 'contencioso') {
+    html = `
+      <div class="options-group">
+        <h3>Complementos (suma al precio base 1.293,50 €)</h3>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="195" onchange="calcFamiliaOpts()">
+          <span class="item-label">Con bienes (USO)</span><span class="item-price">+ 195 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="195" onchange="calcFamiliaOpts()">
+          <span class="item-label">Con hijos</span><span class="item-price">+ 195 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="390" onchange="calcFamiliaOpts()">
+          <span class="item-label">Con pensión compensatoria</span><span class="item-price">+ 390 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_opt" data-v="513.5" onchange="calcFamiliaOpts()">
+          <span class="item-label">Medidas Provisionales</span><span class="item-price">+ 513,50 €</span></label>
+      </div>`;
+    wrap.innerHTML = html;
+    calcFamiliaOpts(1293.5);
+  } else if (tipo === 'medidas_prov') {
+    showResult([{ label: 'Medidas Provisionales', v: 513.5 }]);
+  } else if (tipo === 'reconvencion') {
+    html = `
+      <div class="options-group">
+        <h3>¿Hay hijos?</h3>
+        <label class="check-item"><input type="radio" name="rec_hijos" value="si" onchange="calcFamiliaOpts2()"> <span class="item-label">Con hijos</span><span class="item-price">650 €</span></label>
+        <label class="check-item"><input type="radio" name="rec_hijos" value="no" onchange="calcFamiliaOpts2()"> <span class="item-label">Sin hijos</span><span class="item-price">390 €</span></label>
+      </div>`;
+    wrap.innerHTML = html;
+  } else if (tipo === 'nulidad') {
+    showResult([{ label: 'Nulidad Matrimonial (precio base)', v: 3640 }]);
+  } else if (tipo === 'incapacitacion') {
+    showResult([{ label: 'Incapacitación', v: 1820 }]);
+  } else if (tipo === 'gananciales') {
+    html = `
+      <div class="options-group">
+        <h3>Modalidad</h3>
+        <label class="check-item"><input type="radio" name="gan_mod" value="mutuo" onchange="calcGananciales()"> <span class="item-label">Mutuo Acuerdo (base + 0,90% bienes)</span></label>
+        <label class="check-item"><input type="radio" name="gan_mod" value="cont" onchange="calcGananciales()"> <span class="item-label">Contencioso (base + 2,50% bienes)</span></label>
+      </div>
+      <div class="amount-input" style="margin-top:12px">
+        <label>Valor de los bienes adjudicados (€)</label>
+        <input type="number" id="gan_valor" placeholder="Ej: 120000" min="0" oninput="calcGananciales()">
+      </div>`;
+    wrap.innerHTML = html;
+  } else if (tipo === 'mediacion') {
+    html = `
+      <div class="options-group">
+        <h3>Servicios de mediación</h3>
+        <label class="check-item"><input type="checkbox" class="fam_med" data-v="450" onchange="calcMediacion()">
+          <span class="item-label">Presentación y asistencia</span><span class="item-price">450 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_med" data-v="300" onchange="calcMediacion()">
+          <span class="item-label">Asistencia a mediación</span><span class="item-price">300 €</span></label>
+        <label class="check-item"><input type="checkbox" class="fam_med" data-v="80" onchange="calcMediacion()">
+          <span class="item-label">Apertura de expediente (suplido colegio)</span><span class="item-price">80 €</span></label>
+      </div>
+      <div class="amount-input" style="margin-top:8px">
+        <label>Número de sesiones adicionales</label>
+        <input type="number" id="med_sesiones" placeholder="0" min="0" value="0" oninput="calcMediacion()">
+        <p class="note">100 € / sesión adicional</p>
+      </div>
+      <div class="amount-input" style="margin-top:8px">
+        <label>En caso de acuerdo – cantidad a pactar (€)</label>
+        <input type="number" id="med_acuerdo" placeholder="Entre 600 y 1.200" min="600" max="1200" oninput="calcMediacion()">
+      </div>`;
+    wrap.innerHTML = html;
+  }
+}
+
+function calcFamiliaOpts(base) {
+  const checks = document.querySelectorAll('.fam_opt');
+  if (!checks.length) return;
+  const tipo = document.getElementById('fam_tipo').value;
+  const b = base || (tipo === 'mutuo' ? 513.5 : 1293.5);
+  let extras = 0;
+  const lines = [{ label: 'Precio base', v: b }];
+  checks.forEach(c => {
+    if (c.checked) {
+      extras += parseFloat(c.dataset.v);
+      lines.push({ label: c.parentElement.querySelector('.item-label').textContent, v: parseFloat(c.dataset.v) });
+    }
+  });
+  showResult(lines);
+}
+
+function calcFamiliaOpts2() {
+  const val = document.querySelector('input[name="rec_hijos"]:checked')?.value;
+  if (!val) return;
+  showResult([{ label: 'Reconvención', v: val === 'si' ? 650 : 390 }]);
+}
+
+function calcGananciales() {
+  const mod = document.querySelector('input[name="gan_mod"]:checked')?.value;
+  const valor = parseFloat(document.getElementById('gan_valor')?.value) || 0;
+  if (!mod) return;
+  const base = mod === 'mutuo' ? 513.5 : 1293.5;
+  const pct = mod === 'mutuo' ? 0.009 : 0.025;
+  const pctLabel = mod === 'mutuo' ? '0,90%' : '2,50%';
+  const pctVal = valor * pct;
+  showResult([
+    { label: 'Precio base', v: base },
+    { label: `${pctLabel} s/ bienes (${fmt(valor)} €)`, v: pctVal },
+  ]);
+}
+
+function calcMediacion() {
+  const checks = document.querySelectorAll('.fam_med');
+  const sesiones = parseInt(document.getElementById('med_sesiones')?.value) || 0;
+  const acuerdo = parseFloat(document.getElementById('med_acuerdo')?.value) || 0;
+  const lines = [];
+  checks.forEach(c => {
+    if (c.checked) lines.push({ label: c.parentElement.querySelector('.item-label').textContent, v: parseFloat(c.dataset.v) });
+  });
+  if (sesiones > 0) lines.push({ label: `${sesiones} sesión/es adicional/es`, v: sesiones * 100 });
+  if (acuerdo > 0) lines.push({ label: `Cantidad en caso de acuerdo`, v: Math.min(Math.max(acuerdo, 600), 1200) });
+  if (lines.length) showResult(lines);
+}
+
+function calcCivil() {
+  const tipo = document.getElementById('civ_tipo').value;
+  const wrap = document.getElementById('civ_cuantia_wrap');
+  if (!tipo) { hideResult(); return; }
+
+  if (tipo === 'judicial') {
+    wrap.classList.remove('hidden');
+    const cuantia = parseFloat(document.getElementById('civ_cuantia')?.value) || 0;
+    if (!cuantia) { hideResult(); return; }
+    let honorarios = 0;
+    if (cuantia <= 17999) honorarios = Math.max(cuantia * 0.04, 200);
+    else if (cuantia <= 50000) honorarios = Math.max(cuantia * 0.03, 200);
+    else honorarios = Math.max(cuantia * 0.02, 200);
+    const pct = cuantia <= 17999 ? '4%' : cuantia <= 50000 ? '3%' : '2%';
+    showResult([{ label: `Procedimiento judicial (${pct} s/ ${fmt(cuantia)} €)`, v: honorarios }]);
+  } else {
+    wrap.classList.add('hidden');
+    const MAP = {
+      reconvencion: [{ label: 'Reconvención', v: 1103 }],
+      apelacion: [{ label: 'Recurso de Apelación', v: 1103 }],
+      casacion: [{ label: 'Recurso de Casación', v: 882.29 }],
+      extrajudicial: [{ label: 'Procedimiento Extrajudicial', v: 707 }],
+      clausula_rebus: [{ label: 'Cláusula Rebus / Renegociación', v: 1080 }],
+    };
+    showResult(MAP[tipo]);
+  }
+}
+
+function calcHC() {
+  const tipo = document.getElementById('hc_tipo').value;
+  const wrap = document.getElementById('hc_cuantia_wrap');
+  if (!tipo) { hideResult(); return; }
+  wrap.classList.remove('hidden');
+  const cuantia = parseFloat(document.getElementById('hc_cuantia')?.value) || 0;
+  if (!cuantia) { hideResult(); return; }
+
+  // Tramos herencia contenciosa
+  const tramosImp = [
+    { hasta: 10000, fijo: 312 },
+    { desde: 10000, hasta: 100000, pct: 2.0, base: 312 },
+    { desde: 100000, hasta: 500000, pct: 1.25, base: 2112 },
+    { desde: 500000, hasta: 1000000, pct: 1.0, base: 8712 },
+    { desde: 1000000, hasta: 2000000, pct: 0.9, base: 16212 },
+    { desde: 2000000, pct: 0.6, base: 28712 },
+  ];
+  const tramosDiv = [
+    { hasta: 10000, fijo: 312 },
+    { desde: 10000, hasta: 100000, pct: 2.1, base: 312 },
+    { desde: 100000, hasta: 500000, pct: 1.35, base: 2112 },
+    { desde: 500000, hasta: 1000000, pct: 1.05, base: 10112 },
+    { desde: 1000000, hasta: 2000000, pct: 0.95, base: 17612 },
+    { desde: 2000000, pct: 0.67, base: 30112 },
+  ];
+
+  const tramos = tipo === 'impugnacion' ? tramosImp : tramosDiv;
+  const label = tipo === 'impugnacion' ? 'Impugnación de Testamento' : 'División Judicial de Herencia';
+  let honorarios = 260; // mínimo
+  for (const t of tramos) {
+    if (t.fijo !== undefined && cuantia <= t.hasta) { honorarios = t.fijo; break; }
+    if (!t.hasta || cuantia > t.hasta) continue; // no es el tramo
+    if (cuantia > (t.desde || 0)) {
+      const base = t.base || 0;
+      const exceso = cuantia - (t.desde || 0);
+      honorarios = Math.max(base + exceso * t.pct / 100, 260);
+      break;
+    }
+  }
+  // Tramo final (sin hasta)
+  const ultimo = tramos[tramos.length - 1];
+  if (cuantia > (ultimo.desde || 0)) {
+    honorarios = Math.max((ultimo.base || 0) + (cuantia - ultimo.desde) * ultimo.pct / 100, 260);
+  }
+  showResult([{ label, v: Math.max(honorarios, 260) }]);
+}
+
+function calcHM() {
+  const tipo = document.getElementById('hm_tipo').value;
+  const wrap = document.getElementById('hm_cuantia_wrap');
+  if (!tipo) { hideResult(); return; }
+
+  const fixed = { renuncia_estudio: 467, renuncia_tramite: 311, testamento_simple: 361, testamento_complejo: 738 };
+  if (fixed[tipo]) { wrap.classList.add('hidden'); showResult([{ label: document.getElementById('hm_tipo').selectedOptions[0].text, v: fixed[tipo] }]); return; }
+
+  wrap.classList.remove('hidden');
+  const cuantia = parseFloat(document.getElementById('hm_cuantia')?.value) || 0;
+  if (!cuantia) { hideResult(); return; }
+
+  const TABLES = {
+    con_testamento: [
+      { hasta: 20000, fijo: 221 },
+      { desde: 20000, hasta: 100000, pct: 0.60, base: 701 },
+      { desde: 100000, hasta: 500000, pct: 1.5, base: 1301 },
+      { desde: 500000, hasta: 1000000, pct: 2.5, base: 1701 },
+      { desde: 1000000, hasta: 2000000, pct: 0.06, base: 2301 },
+      { desde: 2000000, pct: 0.05 },
+    ],
+    sin_testamento_notarial: [
+      { hasta: 20000, fijo: 221 },
+      { desde: 20000, hasta: 100000, pct: 0.78, base: 845 },
+      { desde: 100000, hasta: 500000, pct: 0.20, base: 1625 },
+      { desde: 500000, hasta: 1000000, pct: 0.10, base: 2145 },
+      { desde: 1000000, hasta: 2000000, pct: 0.08, base: 2925 },
+      { desde: 2000000, pct: 0.07 },
+    ],
+    sin_testamento_judicial: [
+      { hasta: 20000, fijo: 395 },
+      { desde: 20000, hasta: 100000, pct: 1.80, base: 1835 },
+      { desde: 100000, hasta: 500000, pct: 0.53, base: 3935 },
+      { desde: 500000, hasta: 1000000, pct: 0.40, base: 5935 },
+      { desde: 1000000, hasta: 2000000, pct: 0.33, base: 9235 },
+      { desde: 2000000, pct: 0.28 },
+    ],
+  };
+  const tramos = TABLES[tipo];
+  let honorarios = 0;
+  for (const t of tramos) {
+    const desde = t.desde || 0;
+    const hasta = t.hasta || Infinity;
+    if (cuantia <= hasta) {
+      if (t.fijo !== undefined) { honorarios = t.fijo; break; }
+      honorarios = (t.base || 0) + (cuantia - desde) * t.pct / 100;
+      break;
+    }
+  }
+  showResult([{ label: document.getElementById('hm_tipo').selectedOptions[0].text, v: honorarios }]);
+}
+
+function calcDesahucio() {
+  const tipo = document.getElementById('des_tipo').value;
+  const MAP = {
+    falta_pago: 895, precario: 895,
+    mensual_bajo: 895, mensual_medio: 1074, mensual_alto: 1074,
+  };
+  if (!tipo) { hideResult(); return; }
+  showResult([{ label: document.getElementById('des_tipo').selectedOptions[0].text, v: MAP[tipo] }]);
+}
+
+function calcEjecuciones() {
+  const tipo = document.getElementById('eje_tipo').value;
+  const wrap = document.getElementById('eje_cuantia_wrap');
+  if (!tipo) { hideResult(); return; }
+
+  if (tipo === 'judicial') {
+    wrap.classList.remove('hidden');
+    const cuantia = parseFloat(document.getElementById('eje_cuantia')?.value) || 0;
+    if (!cuantia) { hideResult(); return; }
+    let h = 0;
+    if (cuantia <= 18000) h = Math.max(cuantia * 0.04, 200);
+    else if (cuantia <= 50000) h = Math.max(cuantia * 0.03, 200);
+    else h = Math.max(cuantia * 0.02, 200);
+    const pct = cuantia <= 18000 ? '4%' : cuantia <= 50000 ? '3%' : '2%';
+    showResult([{ label: `Ejecución judicial (${pct} s/ ${fmt(cuantia)} €)`, v: h }]);
+  } else {
+    wrap.classList.add('hidden');
+    const MAP = { apremio: 800, obligacion_hacer: null, nulidad_actuaciones: null };
+    if (tipo === 'apremio') showResult([{ label: 'Ejecución en Vía de Apremio', v: 800 }]);
+    else showResult([{ label: document.getElementById('eje_tipo').selectedOptions[0].text + ' – consultar con el despacho', v: 0, nota: true }]);
+  }
+}
+
+function calcMonitorios() {
+  const cuantia = parseFloat(document.getElementById('mon_cuantia')?.value) || 0;
+  if (!cuantia) { hideResult(); return; }
+  let base = 0;
+  if (cuantia <= 18000) base = 460;
+  else if (cuantia <= 50000) base = 1838;
+  else base = Math.max(cuantia * 0.02, 1838);
+  const lines = [{ label: `Monitorio (cuantía ${fmt(cuantia)} €)`, v: base }];
+  const apremio = document.getElementById('mon_apremio')?.checked;
+  if (apremio) lines.push({ label: 'Ejecución en vía de apremio', v: 800 });
+  showResult(lines);
+}
+
+function calcLaboral() {
+  const tipo = document.getElementById('lab_tipo').value;
+  if (!tipo) { hideResult(); return; }
+  const pctWrap = document.getElementById('lab_pct_wrap');
+  const MAP = { conciliacion: 250, juicio_bajo: 600, juicio_alto: 1200, pack_bajo: 680, pack_alto: 1160 };
+  const base = MAP[tipo];
+  pctWrap.classList.remove('hidden');
+  const pct = parseFloat(document.getElementById('lab_pct_sel')?.value) || 0;
+  const importe = parseFloat(document.getElementById('lab_diferencia')?.value) || 0;
+  const lines = [{ label: document.getElementById('lab_tipo').selectedOptions[0].text, v: base }];
+  if (pct > 0 && importe > 0) {
+    lines.push({ label: `${pct}% éxito s/ ${fmt(importe)} €`, v: importe * pct / 100 });
+  }
+  showResult(lines);
+}
+
+function calcLaboralEmpresa() {
+  const tipo = document.getElementById('lemp_tipo').value;
+  if (!tipo) { hideResult(); return; }
+  const pctWrap = document.getElementById('lemp_pct_wrap');
+  const MAP = { papeleta: 250, juicio_bajo: 600, juicio_alto: 1200, pack_bajo: 680, pack_alto: 1160 };
+  const base = MAP[tipo];
+  pctWrap.classList.remove('hidden');
+  const dif = parseFloat(document.getElementById('lemp_diferencia')?.value) || 0;
+  const lines = [{ label: document.getElementById('lemp_tipo').selectedOptions[0].text, v: base }];
+  if (dif > 0) {
+    let pctTotal = 0;
+    if (dif <= 5000) pctTotal = dif * 0.15;
+    else if (dif <= 30000) pctTotal = 5000 * 0.15 + (dif - 5000) * 0.12;
+    else pctTotal = 5000 * 0.15 + 25000 * 0.12 + (dif - 30000) * 0.10;
+    lines.push({ label: `% escalonado s/ diferencia conseguida (${fmt(dif)} €)`, v: pctTotal });
+  }
+  showResult(lines);
+}
+
+function calcLaboralIncap() {
+  const tipo = document.getElementById('linc_tipo').value;
+  if (!tipo) { hideResult(); return; }
+  const MAP = { simple: 5000, complejo: 12000, extrajudicial: 717 };
+  showResult([{ label: document.getElementById('linc_tipo').selectedOptions[0].text, v: MAP[tipo] }]);
+}
+
+function calcExtranjeria() {
+  const tipo = document.getElementById('ext_tipo').value;
+  if (!tipo) { hideResult(); return; }
+  const MAP = {
+    res_cuenta_ajena: 495, res_familiar_ue: 513.5, res_reagrupacion_1: 350, res_reagrupacion_sig: 250,
+    res_arraigo: 495, res_pac: 900, res_familiar_pac: 550, res_menores: 435.6,
+    res_golden: 1200, res_golden_renov: 600, res_no_lucrativa: 800, res_nomada: 900,
+    res_intraempresarial: 800, res_familiar_espanol: 513.5,
+    visado_turista: 200, visado_residencia: 495,
+    nac_residencia: 450, nac_opcion: 450, jura_nac: 150,
+    nie: 150, asignacion_nie: 110, cert_cue: 110,
+    carta_invitacion: 295, estudios: 495,
+    asilo: 595, recurso_reposicion: 229, recurso_contencioso: 799,
+    medidas_cautelares: 400, homologacion: 400, exequatur: 900,
+    asistencia_aeropuerto: 1200,
+  };
+  showResult([{ label: document.getElementById('ext_tipo').selectedOptions[0].text, v: MAP[tipo] }]);
+}
+
+function calcBancario() {
+  const tipo = document.getElementById('ban_tipo').value;
+  const wrap = document.getElementById('ban_importe_wrap');
+  if (!tipo) { hideResult(); return; }
+
+  const needImporte = ['preferentes','promotoras','clausula_suelo','gastos_hipoteca','suelo_gastos','dacion','revolving'];
+  if (needImporte.includes(tipo)) {
+    wrap.classList.remove('hidden');
+  } else {
+    wrap.classList.add('hidden');
+  }
+
+  const importe = parseFloat(document.getElementById('ban_importe')?.value) || 0;
+
+  const PCT = {
+    preferentes: { fijo: 99, pct: 15 },
+    promotoras: { fijo: 326, pct: 8 },
+    clausula_suelo: { fijo: 300, pct: 15 },
+    gastos_hipoteca: { fijo: 100, pct: 15 },
+    suelo_gastos: { fijo: 300, pct: 15 },
+    dacion: { fijo: 850, pct: 5 },
+    revolving: { fijo: 100, pct: 15 },
+  };
+
+  if (PCT[tipo]) {
+    const { fijo, pct } = PCT[tipo];
+    const lines = [{ label: document.getElementById('ban_tipo').selectedOptions[0].text + ' (provisión)', v: fijo }];
+    if (importe > 0) lines.push({ label: `${pct}% éxito s/ ${fmt(importe)} €`, v: importe * pct / 100 });
+    showResult(lines);
+  } else if (tipo === 'reestructuracion') {
+    showResult([{ label: 'Reestructuración Hipotecaria', v: 500 }, { label: 'Prima de éxito', v: 200 }]);
+  } else if (tipo === 'bankia_bajo') {
+    showResult([{ label: 'Bankia/Popular (hasta 3.000 €)', v: 600 }]);
+  } else if (tipo === 'bankia_alto') {
+    showResult([{ label: 'Bankia/Popular (más de 3.000 €) base', v: 900 }]);
+  }
+}
+
+function calcContratos() {
+  const tipo = document.getElementById('con_tipo').value;
+  if (!tipo) { hideResult(); return; }
+  const MAP = {
+    compraventa_1: 915, compraventa_2: 1039, compraventa_3: 1289,
+    redaccion: 931, negociacion: 55, redaccion_negociacion: 200,
+    resolucion_extrajudicial: 55,
+  };
+  showResult([{ label: document.getElementById('con_tipo').selectedOptions[0].text, v: MAP[tipo] }]);
+}
+
+function calcFranquicia() {
+  const items = [
+    { id: 'fra_info', label: 'Información', v: 359 },
+    { id: 'fra_docs', label: 'Documentos Básicos', v: 239 },
+    { id: 'fra_contratos', label: 'Contratos', v: 1439 },
+    { id: 'fra_manuales', label: 'Manuales', v: 239 },
+  ];
+  const lines = items.filter(i => document.getElementById(i.id)?.checked).map(i => ({ label: i.label, v: i.v }));
+  if (lines.length) showResult(lines); else hideResult();
+}
+
+function calcAdministrativo() {
+  const tipo = document.getElementById('adm_tipo').value;
+  const cuantiaWrap = document.getElementById('adm_cuantia_wrap');
+  const cobradoWrap = document.getElementById('adm_cobrado_wrap');
+  cuantiaWrap.classList.add('hidden');
+  cobradoWrap.classList.add('hidden');
+  if (!tipo) { hideResult(); return; }
+
+  const FIJOS = {
+    plusvalia_ext:      [{ label: 'Devolución Plusvalía – Extrajudicial', v: 150 }],
+    renta_minima:       [{ label: 'Solicitud Renta Mínima Vital', v: 240 }],
+    adopcion:           [{ label: 'Solicitud de Adopción', v: 1080 }],
+    pension_hijo:       [{ label: 'Solicitud / Incremento Pensión por Hijo (+10%)', v: 240 * 1.10 }],
+    alegaciones:        [{ label: 'Alegaciones Sin Cuantía (precio mínimo)', v: 240 }],
+    homologacion_ue:    [{ label: 'Homologación Título Médico – UE', v: 358.8 }],
+    homologacion_fase:  [{ label: 'Homologación Título Médico – Fase Previa (fuera UE)', v: 714 }],
+    homologacion_cont:  [{ label: 'Homologación Título Médico – Contencioso (fuera UE)', v: 1080 }],
+  };
+
+  if (FIJOS[tipo]) { showResult(FIJOS[tipo]); return; }
+
+  if (tipo === 'plusvalia_jud') {
+    cobradoWrap.classList.remove('hidden');
+    const cobrado = parseFloat(document.getElementById('adm_cobrado')?.value) || 0;
+    if (!cobrado) { hideResult(); return; }
+    showResult([{ label: `10% s/ ${fmt(cobrado)} € cobrado`, v: cobrado * 0.10 }]);
+    return;
+  }
+
+  // Contencioso, reclamación previa, conjunto — base fija + % por cuantía
+  cuantiaWrap.classList.remove('hidden');
+  const cuantia = parseFloat(document.getElementById('adm_cuantia')?.value) || 0;
+
+  const BASE = { contencioso: 781, rec_previa: 0, conjunto: 781 };
+  const base = BASE[tipo];
+  const lines = [];
+  if (base > 0) lines.push({ label: 'Base procedimiento', v: base });
+
+  if (cuantia > 0) {
+    const pct = cuantia > 50000 ? 2 : cuantia > 18000 ? 3 : 4;
+    const label = tipo === 'conjunto'
+      ? `${pct}% s/ ${fmt(cuantia)} € (previa + contencioso)`
+      : `${pct}% s/ ${fmt(cuantia)} €`;
+    lines.push({ label, v: cuantia * pct / 100 });
+  }
+
+  if (lines.length) showResult(lines); else hideResult();
+}
+
+function renderPenal() {
+  const rol = document.getElementById('pen_rol').value;
+  const wrap = document.getElementById('pen_extra');
+  wrap.innerHTML = '';
+  hideResult();
+  if (!rol) return;
+
+  if (rol === 'denunciado') {
+    wrap.innerHTML = `
+      <div class="options-group">
+        <h3>Tipo de asunto</h3>
+        <label class="check-item"><input type="radio" name="pen_den" value="diligencias" onchange="calcPenal()">
+          <span class="item-label">Diligencias Previas</span><span class="item-price">668 €</span></label>
+        <label class="check-item"><input type="radio" name="pen_den" value="juicio" onchange="calcPenal()">
+          <span class="item-label">Diligencias Previas + Juicio</span><span class="item-price">869 €</span></label>
+        <label class="check-item"><input type="radio" name="pen_den" value="completo" onchange="calcPenal()">
+          <span class="item-label">Procedimiento completo (hasta 18.000€)</span><span class="item-price">2.431 €</span></label>
+      </div>
+      <div id="pen_den_pct_wrap" class="hidden amount-input">
+        <label style="margin-top:12px">Cuantía reclamada (€) <span class="tag">Para % éxito</span></label>
+        <input type="number" id="pen_cuantia" placeholder="Ej: 25000" min="0" oninput="calcPenal()">
+        <p class="note">Hasta 18.000€ = 4% · hasta 50.000€ = 3% · superior = 2% (solo cuando representamos al denunciado)</p>
+      </div>`;
+  } else if (rol === 'denunciante') {
+    wrap.innerHTML = `
+      <div class="options-group">
+        <h3>Tipo de asunto</h3>
+        <label class="check-item"><input type="radio" name="pen_dnte" value="diligencias" onchange="calcPenal()">
+          <span class="item-label">Diligencias Previas</span><span class="item-price">1.215 €</span></label>
+        <label class="check-item"><input type="radio" name="pen_dnte" value="juicio" onchange="calcPenal()">
+          <span class="item-label">Diligencias Previas + Juicio</span><span class="item-price">1.580 €</span></label>
+        <label class="check-item"><input type="radio" name="pen_dnte" value="recurso_ap" onchange="calcPenal()">
+          <span class="item-label">Recurso Audiencia Provincial</span><span class="item-price">121 €</span></label>
+      </div>
+      <div class="options-group">
+        <label class="check-item">
+          <input type="checkbox" id="pen_descuento" onchange="calcPenal()">
+          <span class="item-label">Segundo presupuesto (descuento 20%)</span>
+        </label>
+      </div>`;
+  } else if (rol === 'fijo') {
+    wrap.innerHTML = `
+      <div>
+        <label style="margin-top:8px">Servicio</label>
+        <select id="pen_fijo_tipo" onchange="calcPenal()">
+          <option value="">-- Selecciona --</option>
+          <option value="462">Juicio por delito leve (desde)</option>
+          <option value="594">Delito leve + Averiguación</option>
+          <option value="954">Juicio Rápido (con IVA)</option>
+          <option value="432">Recurso de apelación por sobreseimiento</option>
+          <option value="462">Asistencia al Detenido en Comisaría</option>
+          <option value="689">Asistencia Detenido en Comisaría + Juzgado</option>
+          <option value="384">Cancelación de antecedentes penales</option>
+          <option value="250">Cancelación de antecedentes penales (trámite)</option>
+          <option value="150">Verificación de antecedentes penales</option>
+          <option value="644">Recurso frente al auto de ingreso en prisión</option>
+          <option value="514">Medidas cautelares</option>
+          <option value="432">Salida al centro penitenciario</option>
+          <option value="1008">Asesoramiento penitenciario anual</option>
+        </select>
+      </div>`;
+  }
+}
+
+function calcPenal() {
+  const rol = document.getElementById('pen_rol').value;
+
+  if (rol === 'denunciado') {
+    const sel = document.querySelector('input[name="pen_den"]:checked')?.value;
+    if (!sel) { hideResult(); return; }
+    const pctWrap = document.getElementById('pen_den_pct_wrap');
+    const BASE = { diligencias: 668, juicio: 869, completo: 2431 };
+    const base = BASE[sel];
+    pctWrap.classList.remove('hidden');
+    const cuantia = parseFloat(document.getElementById('pen_cuantia')?.value) || 0;
+    const lines = [{ label: document.querySelector('input[name="pen_den"]:checked').closest('.check-item').querySelector('.item-label').textContent, v: base }];
+    if (cuantia > 0 && sel !== 'completo') {
+      const pct = cuantia <= 18000 ? 4 : cuantia <= 50000 ? 3 : 2;
+      lines.push({ label: `${pct}% éxito s/ ${fmt(cuantia)} €`, v: cuantia * pct / 100 });
+    }
+    showResult(lines);
+
+  } else if (rol === 'denunciante') {
+    const sel = document.querySelector('input[name="pen_dnte"]:checked')?.value;
+    if (!sel) { hideResult(); return; }
+    const BASE = { diligencias: 1215, juicio: 1580, recurso_ap: 121 };
+    let base = BASE[sel];
+    const descuento = document.getElementById('pen_descuento')?.checked;
+    const lines = [{ label: document.querySelector('input[name="pen_dnte"]:checked').closest('.check-item').querySelector('.item-label').textContent, v: base }];
+    if (descuento) lines.push({ label: 'Descuento 2º presupuesto (−20%)', v: -(base * 0.20) });
+    showResult(lines);
+
+  } else if (rol === 'fijo') {
+    const v = parseFloat(document.getElementById('pen_fijo_tipo')?.value) || 0;
+    const label = document.getElementById('pen_fijo_tipo')?.selectedOptions[0]?.text;
+    if (!v) { hideResult(); return; }
+    showResult([{ label, v }]);
+  }
+}
+
+function calcAsesoria() {
+  const tipo = document.getElementById('ase_tipo').value;
+  if (!tipo) { hideResult(); return; }
+  const MAP = {
+    autonomo_ayuda: 40, sl: 600, renta_basica: 40, renta_compleja: 150,
+    std_1: 75, std_2: 200, std_3: 250, std_4: 300, std_5: 450,
+    oro_1: 100, oro_2: 250, oro_3: 300, oro_4: 350, oro_5: 550,
+    pla_1: 200, pla_2: 550, pla_3: 650, pla_4: 700, pla_5: 995,
+  };
+  const label = document.getElementById('ase_tipo').selectedOptions[0].text;
+  const isIguala = tipo.startsWith('std_') || tipo.startsWith('oro_') || tipo.startsWith('pla_');
+  showResult([{ label: label + (isIguala ? ' /mes' : ''), v: MAP[tipo] }]);
+}
+
+// ─── DISPLAY ─────────────────────────────────────────────────────────────────
+
+function fmt(n) {
+  return n.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function showResult(lines) {
+  if (!lines || !lines.length) { hideResult(); return; }
+  const box = document.getElementById('resultBox');
+  box.style.display = 'block';
+  const total = lines.reduce((s, l) => s + (l.v || 0), 0);
+  const iva = total * 0.21;
+  document.getElementById('resTotal').textContent = fmt(total) + ' €';
+  document.getElementById('resIva').textContent = `+ IVA (21%): ${fmt(iva)} € → Total con IVA: ${fmt(total + iva)} €`;
+  const bd = document.getElementById('resBreakdown');
+  if (lines.length > 1) {
+    bd.innerHTML = lines.map(l => `<div class="breakdown-line"><span>${l.label}</span><span>${fmt(l.v)} €</span></div>`).join('')
+      + `<div class="breakdown-line total-line"><span>TOTAL (sin IVA)</span><span>${fmt(total)} €</span></div>`;
+  } else {
+    bd.innerHTML = '';
+  }
+}
+
+function hideResult() {
+  document.getElementById('resultBox').style.display = 'none';
+}
+
+function resetCalc() {
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('servicePanel').style.display = 'none';
+  hideResult();
+}
+
+// ─── ÁREA BUTTONS ─────────────────────────────────────────────────────────────
+
+function initAreas() {
+  const container = document.getElementById('areaBtns');
+  AREAS.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'area-btn';
+    btn.textContent = a.label;
+    btn.onclick = () => selectArea(a);
+    container.appendChild(btn);
+  });
+}
+
+function selectArea(area) {
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  hideResult();
+  const panel = document.getElementById('servicePanel');
+  panel.style.display = 'block';
+  document.getElementById('serviceTitle').textContent = area.label;
+  const renderer = RENDERERS[area.id];
+  document.getElementById('serviceContent').innerHTML = renderer ? renderer() : '<p>Área en configuración.</p>';
+  // Auto-trigger para franquicia
+  if (area.id === 'franquicia') calcFranquicia();
+}
+
+initAreas();
+</script>
+</body>
+</html>
