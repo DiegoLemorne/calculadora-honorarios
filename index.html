@@ -12,10 +12,96 @@
   .header-text h1 { font-size: 1.45rem; font-weight: 800; color: #1a1a1a; letter-spacing: 1.5px; text-transform: uppercase; }
   .header-text p { font-size: 0.8rem; color: #666; margin-top: 3px; letter-spacing: 0.5px; }
 
-  .container { max-width: 960px; margin: 32px auto; padding: 0 16px; }
+  /* ── LAYOUT ─────────────────────────────────────────────── */
+  .layout { display: flex; min-height: calc(100vh - 96px); }
+
+  /* ── SIDEBAR ─────────────────────────────────────────────── */
+  .sidebar {
+    width: 240px; flex-shrink: 0;
+    background: #ffffff; border-right: 1px solid #e8e8e8;
+    display: flex; flex-direction: column;
+    transition: width 0.25s ease;
+    overflow: hidden;
+    position: sticky; top: 0; height: calc(100vh - 96px);
+  }
+  .sidebar.collapsed { width: 44px; }
+
+  .sidebar-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 12px 14px 16px;
+    border-bottom: 1px solid #f0f0f0; flex-shrink: 0;
+  }
+  .sidebar-head span {
+    font-size: 0.72rem; font-weight: 800; color: #aaa;
+    text-transform: uppercase; letter-spacing: 1px;
+    white-space: nowrap; overflow: hidden;
+    transition: opacity 0.2s;
+  }
+  .sidebar.collapsed .sidebar-head span { opacity: 0; }
+
+  .toggle-btn {
+    background: none; border: none; cursor: pointer;
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: #999; font-size: 1rem; flex-shrink: 0;
+    transition: background 0.15s, color 0.15s;
+  }
+  .toggle-btn:hover { background: #f0f0f0; color: #1a1a1a; }
+
+  .sidebar-nav { overflow-y: auto; flex: 1; padding: 8px 0; }
+  .sidebar-nav::-webkit-scrollbar { width: 4px; }
+  .sidebar-nav::-webkit-scrollbar-thumb { background: #e0e0e0; border-radius: 2px; }
+
+  .area-btn {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 10px 16px;
+    background: none; border: none; border-left: 3px solid transparent;
+    text-align: left; cursor: pointer; white-space: nowrap;
+    font-size: 0.85rem; font-weight: 600; color: #555;
+    transition: all 0.15s;
+  }
+  .area-btn .ab-icon {
+    width: 24px; height: 24px; border-radius: 6px;
+    background: #f0f0f0; display: flex; align-items: center;
+    justify-content: center; font-size: 0.7rem; font-weight: 800;
+    color: #888; flex-shrink: 0; transition: background 0.15s, color 0.15s;
+  }
+  .area-btn .ab-label { overflow: hidden; transition: opacity 0.2s; }
+  .sidebar.collapsed .ab-label { opacity: 0; width: 0; }
+  .area-btn:hover { background: #f7f7f7; color: #1a1a1a; }
+  .area-btn:hover .ab-icon { background: #e8e8e8; color: #1a1a1a; }
+  .area-btn.active { background: #f0f3ff; color: #4361ee; border-left-color: #4361ee; }
+  .area-btn.active .ab-icon { background: #4361ee; color: white; }
+
+  /* ── MAIN CONTENT ────────────────────────────────────────── */
+  .main-content { flex: 1; padding: 28px 28px 28px 24px; min-width: 0; max-width: 760px; }
+
+  .container { max-width: 960px; margin: 0 auto; padding: 0; }
 
   .card { background: white; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
   .card h2 { font-size: 1rem; font-weight: 700; color: #16213e; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Tooltip para sidebar colapsada */
+  .area-btn { position: relative; }
+  .sidebar.collapsed .area-btn:hover::after {
+    content: attr(data-label);
+    position: absolute; left: 48px; top: 50%;
+    transform: translateY(-50%);
+    background: #1a1a1a; color: white;
+    padding: 4px 10px; border-radius: 6px;
+    font-size: 0.78rem; white-space: nowrap;
+    pointer-events: none; z-index: 999;
+  }
+
+  @media(max-width: 700px) {
+    .layout { flex-direction: column; }
+    .sidebar { width: 100% !important; height: auto; position: static; border-right: none; border-bottom: 1px solid #e8e8e8; }
+    .sidebar-nav { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 12px; }
+    .area-btn { width: auto; border-left: none; border-bottom: 2px solid transparent; padding: 6px 12px; }
+    .area-btn.active { border-bottom-color: #4361ee; border-left-color: transparent; background: #f0f3ff; }
+    .sidebar.collapsed .ab-label { opacity: 1; width: auto; }
+    .main-content { padding: 16px; }
+  }
 
   label { display: block; font-size: 0.85rem; font-weight: 600; color: #555; margin-bottom: 6px; }
   select, input[type=number] {
@@ -75,30 +161,44 @@
   <a href="./admin.html" style="margin-left:auto;font-size:0.78rem;color:#888;text-decoration:none;border:1px solid #ddd;padding:6px 14px;border-radius:20px;" title="Panel de administración">⚙ Admin</a>
 </header>
 
-<div class="container">
+<div class="layout">
 
-  <!-- Selector de área -->
-  <div class="card">
-    <h2>Área de Derecho</h2>
-    <div class="area-btn-group" id="areaBtns"></div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-head">
+      <span>Especialidades</span>
+      <button class="toggle-btn" onclick="toggleSidebar()" title="Colapsar menú">&#9776;</button>
+    </div>
+    <nav class="sidebar-nav" id="areaBtns"></nav>
+  </aside>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="main-content">
+
+    <!-- Panel dinámico -->
+    <div class="card" id="servicePanel" style="display:none">
+      <h2 id="serviceTitle">Servicio</h2>
+      <div id="serviceContent"></div>
+    </div>
+
+    <!-- Placeholder cuando no hay área seleccionada -->
+    <div id="emptyState" style="text-align:center; padding: 60px 20px; color:#aaa;">
+      <div style="font-size:3rem; margin-bottom:16px;">⚖️</div>
+      <p style="font-size:1rem; font-weight:600; color:#888;">Selecciona un área del menú lateral</p>
+      <p style="font-size:0.82rem; margin-top:6px;">para calcular los honorarios</p>
+    </div>
+
+    <!-- Resultado -->
+    <div class="result-box" id="resultBox" style="display:none">
+      <h2>Honorarios estimados</h2>
+      <div class="result-total" id="resTotal">0,00 €</div>
+      <div class="result-iva" id="resIva"></div>
+      <div class="result-breakdown" id="resBreakdown"></div>
+      <button class="reset-btn" onclick="resetCalc()">Nueva consulta</button>
+      <p class="note" style="color:rgba(255,255,255,0.6); margin-top:12px;">* Honorarios orientativos sin IVA salvo indicación. Consulta con el despacho para presupuesto definitivo.</p>
+    </div>
+
   </div>
-
-  <!-- Panel dinámico -->
-  <div class="card" id="servicePanel" class="hidden">
-    <h2 id="serviceTitle">Servicio</h2>
-    <div id="serviceContent"></div>
-  </div>
-
-  <!-- Resultado -->
-  <div class="result-box" id="resultBox" style="display:none">
-    <h2>Honorarios estimados</h2>
-    <div class="result-total" id="resTotal">0,00 €</div>
-    <div class="result-iva" id="resIva"></div>
-    <div class="result-breakdown" id="resBreakdown"></div>
-    <button class="reset-btn" onclick="resetCalc()">Nueva consulta</button>
-    <p class="note" style="color:rgba(255,255,255,0.6); margin-top:12px;">* Honorarios orientativos sin IVA salvo indicación. Consulta con el despacho para presupuesto definitivo.</p>
-  </div>
-
 </div>
 
 <script>
@@ -1166,32 +1266,54 @@ function hideResult() {
 function resetCalc() {
   document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('servicePanel').style.display = 'none';
+  document.getElementById('emptyState').style.display = 'block';
   hideResult();
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────────────────────
+
+function toggleSidebar() {
+  const s = document.getElementById('sidebar');
+  s.classList.toggle('collapsed');
+  localStorage.setItem('sidebar_collapsed', s.classList.contains('collapsed'));
 }
 
 // ─── ÁREA BUTTONS ─────────────────────────────────────────────────────────────
 
+// Abreviatura de 2 letras para cada área (icono en sidebar colapsada)
+const AREA_ICONS = {
+  familia:'FA', civil:'CV', herencia_contenciosa:'HC', herencia_mutuo:'HM',
+  desahucio:'DS', ejecuciones:'EJ', monitorios:'MO', laboral_empleado:'LE',
+  laboral_empresa:'LP', laboral_incap:'LI', extranjeria:'EX', bancario:'BA',
+  contratos:'CO', franquicia:'FR', asesoria:'AS', penal:'PE', administrativo:'AD'
+};
+
 function initAreas() {
   const container = document.getElementById('areaBtns');
+  // Restaurar estado del sidebar
+  if (localStorage.getItem('sidebar_collapsed') === 'true') {
+    document.getElementById('sidebar').classList.add('collapsed');
+  }
   AREAS.forEach(a => {
     const btn = document.createElement('button');
     btn.className = 'area-btn';
-    btn.textContent = a.label;
-    btn.onclick = () => selectArea(a);
+    btn.setAttribute('data-label', a.label);
+    btn.innerHTML = `<span class="ab-icon">${AREA_ICONS[a.id]||a.label.slice(0,2).toUpperCase()}</span><span class="ab-label">${a.label}</span>`;
+    btn.onclick = (e) => selectArea(a, btn);
     container.appendChild(btn);
   });
 }
 
-function selectArea(area) {
+function selectArea(area, btn) {
   document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  btn.classList.add('active');
   hideResult();
+  document.getElementById('emptyState').style.display = 'none';
   const panel = document.getElementById('servicePanel');
   panel.style.display = 'block';
   document.getElementById('serviceTitle').textContent = area.label;
   const renderer = RENDERERS[area.id];
   document.getElementById('serviceContent').innerHTML = renderer ? renderer() : '<p>Área en configuración.</p>';
-  // Auto-trigger para franquicia
   if (area.id === 'franquicia') calcFranquicia();
 }
 
