@@ -210,7 +210,16 @@ async function loadConfig() {
   try {
     const r = await fetch('./config.json?t=' + Date.now());
     if (r.ok) C = await r.json();
-  } catch(e) {}
+  } catch(e) { console.warn('Config no cargada, usando valores por defecto.'); }
+}
+
+// Garantiza que config esté lista antes de iniciar la UI
+async function startup() {
+  const main = document.querySelector('.main-content');
+  if (main) main.style.opacity = '0.4';
+  await loadConfig();
+  if (main) main.style.opacity = '1';
+  initAreas();
 }
 
 // ─── DATA ─────────────────────────────────────────────────────────────────────
@@ -278,16 +287,21 @@ const RENDERERS = {
       <label>Tipo de actuación</label>
       <select id="civ_tipo" onchange="calcCivil()">
         <option value="">-- Selecciona --</option>
-        <option value="judicial">Procedimiento Judicial</option>
-        <option value="reconvencion">Reconvención</option>
-        <option value="apelacion">Recurso de Apelación</option>
-        <option value="casacion">Recurso de Casación</option>
-        <option value="extrajudicial">Procedimiento Extrajudicial</option>
-        <option value="clausula_rebus">Cláusula Rebus / Renegociación</option>
+        <optgroup label="Por cuantía">
+          <option value="judicial">Procedimiento Judicial</option>
+          <option value="negociacion_pct">Negociación Extrajudicial (% sobre cuantía)</option>
+        </optgroup>
+        <optgroup label="Precio fijo">
+          <option value="reconvencion">Reconvención</option>
+          <option value="apelacion">Recurso de Apelación</option>
+          <option value="casacion">Recurso de Casación</option>
+          <option value="extrajudicial">Procedimiento Extrajudicial (precio fijo)</option>
+          <option value="clausula_rebus">Cláusula Rebus / Renegociación</option>
+        </optgroup>
       </select>
     </div>
     <div id="civ_cuantia_wrap" class="hidden amount-input">
-      <label style="margin-top:16px">Cuantía reclamada (€)</label>
+      <label style="margin-top:16px">Cuantía reclamada / negociada (€)</label>
       <input type="number" id="civ_cuantia" placeholder="Ej: 25000" min="0" oninput="calcCivil()">
     </div>
   `,
@@ -786,25 +800,26 @@ function calcCivil() {
   const wrap = document.getElementById('civ_cuantia_wrap');
   if (!tipo) { hideResult(); return; }
 
-  if (tipo === 'judicial') {
+  if (tipo === 'judicial' || tipo === 'negociacion_pct') {
     wrap.classList.remove('hidden');
     const cuantia = parseFloat(document.getElementById('civ_cuantia')?.value) || 0;
     if (!cuantia) { hideResult(); return; }
     let honorarios = 0;
-    const _min=cf('civil','minimo',200),_p1=cf('civil','pct_tramo1',4),_p2=cf('civil','pct_tramo2',3),_p3=cf('civil','pct_tramo3',2);
+    const _min=cf('civil','minimo',208),_p1=cf('civil','pct_tramo1',4),_p2=cf('civil','pct_tramo2',3),_p3=cf('civil','pct_tramo3',2);
     if (cuantia <= 17999) honorarios = Math.max(cuantia * _p1/100, _min);
     else if (cuantia <= 50000) honorarios = Math.max(cuantia * _p2/100, _min);
     else honorarios = Math.max(cuantia * _p3/100, _min);
     const pct = cuantia <= 17999 ? _p1+'%' : cuantia <= 50000 ? _p2+'%' : _p3+'%';
-    showResult([{ label: `Procedimiento judicial (${pct} s/ ${fmt(cuantia)} €)`, v: honorarios }]);
+    const tipoLabel = tipo === 'negociacion_pct' ? `Negociación extrajudicial (${pct} s/ ${fmt(cuantia)} €)` : `Procedimiento judicial (${pct} s/ ${fmt(cuantia)} €)`;
+    showResult([{ label: tipoLabel, v: honorarios }]);
   } else {
     wrap.classList.add('hidden');
     const MAP = {
-      reconvencion: [{ label: 'Reconvención', v: cf('civil','reconvencion_base',1103) }],
-      apelacion: [{ label: 'Recurso de Apelación', v: cf('civil','apelacion',1103) }],
-      casacion: [{ label: 'Recurso de Casación', v: cf('civil','casacion',882.29) }],
-      extrajudicial: [{ label: 'Procedimiento Extrajudicial', v: cf('civil','extrajudicial',707) }],
-      clausula_rebus: [{ label: 'Cláusula Rebus / Renegociación', v: cf('civil','clausula_rebus',1080) }],
+      reconvencion:   [{ label: 'Reconvención',                    v: cf('civil','reconvencion_base',1147) }],
+      apelacion:      [{ label: 'Recurso de Apelación',            v: cf('civil','apelacion',1147) }],
+      casacion:       [{ label: 'Recurso de Casación',             v: cf('civil','casacion',917) }],
+      extrajudicial:  [{ label: 'Procedimiento Extrajudicial',     v: cf('civil','extrajudicial',735) }],
+      clausula_rebus: [{ label: 'Cláusula Rebus / Renegociación',  v: cf('civil','clausula_rebus',1123) }],
     };
     showResult(MAP[tipo]);
   }
@@ -1317,7 +1332,7 @@ function selectArea(area, btn) {
   if (area.id === 'franquicia') calcFranquicia();
 }
 
-loadConfig().then(initAreas);
+startup();
 </script>
 </body>
 </html>
