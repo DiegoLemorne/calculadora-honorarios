@@ -810,16 +810,16 @@ function calcCivil() {
     const _p3   = cf('civil','pct_tramo3', 2);
 
     if (tipo === 'negociacion_pct') {
-      // Sin cuantía → precio fijo base; con cuantía → % sobre cuantía (mínimo 200€)
+      // Sin cuantía → precio fijo base; con cuantía → base + % sobre cuantía
       if (!cuantia) {
         showResult([{ label: 'Negociación / Conciliación Civil (precio base)', v: _base }]);
       } else {
-        let h = 0;
-        if (cuantia <= 17999) h = Math.max(cuantia * _p1/100, _min);
-        else if (cuantia <= 50000) h = Math.max(cuantia * _p2/100, _min);
-        else h = Math.max(cuantia * _p3/100, _min);
-        const pct = cuantia <= 17999 ? _p1+'%' : cuantia <= 50000 ? _p2+'%' : _p3+'%';
-        showResult([{ label: `Negociación / Conciliación Civil (${pct} s/ ${fmt(cuantia)} €)`, v: h }]);
+        const pct = cuantia < 18000 ? _p1 : cuantia <= 50000 ? _p2 : _p3;
+        const sobreCuantia = cuantia * pct / 100;
+        showResult([
+          { label: 'Base fija',                                    v: _base },
+          { label: `${pct}% s/ ${fmt(cuantia)} € (cuantía)`,      v: sobreCuantia },
+        ]);
       }
     } else {
       // Judicial
