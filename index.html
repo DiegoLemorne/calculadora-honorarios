@@ -289,14 +289,14 @@ const RENDERERS = {
         <option value="">-- Selecciona --</option>
         <optgroup label="Por cuantía">
           <option value="judicial">Procedimiento Judicial</option>
-          <option value="negociacion_pct">Negociación Extrajudicial (% sobre cuantía)</option>
+          <option value="negociacion_pct">Negociación Extrajudicial / Conciliación Civil</option>
         </optgroup>
         <optgroup label="Precio fijo">
           <option value="reconvencion">Reconvención</option>
           <option value="apelacion">Recurso de Apelación</option>
           <option value="casacion">Recurso de Casación</option>
-          <option value="extrajudicial">Procedimiento Extrajudicial (precio fijo)</option>
-          <option value="clausula_rebus">Cláusula Rebus / Renegociación</option>
+          <option value="diligencias_prev">Diligencias Preliminares</option>
+          <option value="clausula_rebus">Cláusula Rebus / Cláusula Rebu Civil</option>
         </optgroup>
       </select>
     </div>
@@ -803,23 +803,42 @@ function calcCivil() {
   if (tipo === 'judicial' || tipo === 'negociacion_pct') {
     wrap.classList.remove('hidden');
     const cuantia = parseFloat(document.getElementById('civ_cuantia')?.value) || 0;
-    if (!cuantia) { hideResult(); return; }
-    let honorarios = 0;
-    const _min=cf('civil','minimo',208),_p1=cf('civil','pct_tramo1',4),_p2=cf('civil','pct_tramo2',3),_p3=cf('civil','pct_tramo3',2);
-    if (cuantia <= 17999) honorarios = Math.max(cuantia * _p1/100, _min);
-    else if (cuantia <= 50000) honorarios = Math.max(cuantia * _p2/100, _min);
-    else honorarios = Math.max(cuantia * _p3/100, _min);
-    const pct = cuantia <= 17999 ? _p1+'%' : cuantia <= 50000 ? _p2+'%' : _p3+'%';
-    const tipoLabel = tipo === 'negociacion_pct' ? `Negociación extrajudicial (${pct} s/ ${fmt(cuantia)} €)` : `Procedimiento judicial (${pct} s/ ${fmt(cuantia)} €)`;
-    showResult([{ label: tipoLabel, v: honorarios }]);
+    const _base = cf('civil','extrajudicial_base', 492);
+    const _min  = cf('civil','minimo', 208);
+    const _p1   = cf('civil','pct_tramo1', 4);
+    const _p2   = cf('civil','pct_tramo2', 3);
+    const _p3   = cf('civil','pct_tramo3', 2);
+
+    if (tipo === 'negociacion_pct') {
+      // Sin cuantía → precio fijo base; con cuantía → % sobre cuantía (mínimo 200€)
+      if (!cuantia) {
+        showResult([{ label: 'Negociación / Conciliación Civil (precio base)', v: _base }]);
+      } else {
+        let h = 0;
+        if (cuantia <= 17999) h = Math.max(cuantia * _p1/100, _min);
+        else if (cuantia <= 50000) h = Math.max(cuantia * _p2/100, _min);
+        else h = Math.max(cuantia * _p3/100, _min);
+        const pct = cuantia <= 17999 ? _p1+'%' : cuantia <= 50000 ? _p2+'%' : _p3+'%';
+        showResult([{ label: `Negociación / Conciliación Civil (${pct} s/ ${fmt(cuantia)} €)`, v: h }]);
+      }
+    } else {
+      // Judicial
+      if (!cuantia) { hideResult(); return; }
+      let honorarios = 0;
+      if (cuantia <= 17999) honorarios = Math.max(cuantia * _p1/100, _min);
+      else if (cuantia <= 50000) honorarios = Math.max(cuantia * _p2/100, _min);
+      else honorarios = Math.max(cuantia * _p3/100, _min);
+      const pct = cuantia <= 17999 ? _p1+'%' : cuantia <= 50000 ? _p2+'%' : _p3+'%';
+      showResult([{ label: `Procedimiento judicial (${pct} s/ ${fmt(cuantia)} €)`, v: honorarios }]);
+    }
   } else {
     wrap.classList.add('hidden');
     const MAP = {
-      reconvencion:   [{ label: 'Reconvención',                    v: cf('civil','reconvencion_base',1147) }],
-      apelacion:      [{ label: 'Recurso de Apelación',            v: cf('civil','apelacion',1147) }],
-      casacion:       [{ label: 'Recurso de Casación',             v: cf('civil','casacion',917) }],
-      extrajudicial:  [{ label: 'Procedimiento Extrajudicial',     v: cf('civil','extrajudicial',735) }],
-      clausula_rebus: [{ label: 'Cláusula Rebus / Renegociación',  v: cf('civil','clausula_rebus',1123) }],
+      reconvencion:    [{ label: 'Reconvención',               v: cf('civil','reconvencion_base', 1147) }],
+      apelacion:       [{ label: 'Recurso de Apelación',       v: cf('civil','apelacion', 1147) }],
+      casacion:        [{ label: 'Recurso de Casación',        v: cf('civil','casacion', 917) }],
+      diligencias_prev:[{ label: 'Diligencias Preliminares',   v: cf('civil','diligencias_prev', 474) }],
+      clausula_rebus:  [{ label: 'Cláusula Rebus',             v: cf('civil','clausula_rebus', 1123) }],
     };
     showResult(MAP[tipo]);
   }
