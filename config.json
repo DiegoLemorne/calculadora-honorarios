@@ -32,7 +32,9 @@
                   "apelacion":  1147.12,
                   "casacion":  917.58,
                   "extrajudicial":  735.28,
-                  "clausula_rebus":  1123.2
+                  "clausula_rebus":  1123.2,
+                  "extrajudicial_base":  492,
+                  "diligencias_prev":  474
               },
     "herencia_contenciosa":  {
                                  "minimo":  270.4,
